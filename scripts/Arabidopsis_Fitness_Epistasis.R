@@ -2,13 +2,11 @@
 # on duplicated homologous genes. 
 # By E Siler
 
-## Load libraries ----
+## Load libraries and data ----
 library(lme4)
 library(ggplot2)
 library(dplyr)
 library(ggpubr)
-
-## Load data ----
 
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
 
@@ -23,6 +21,9 @@ data <- data %>% mutate_at(factor_cols, as.factor)
 data$MA <- as.integer(data$MA == 'MUT')
 data$MB <- as.integer(data$MB == 'MUT')
 data$DM <- as.integer(data$Genotype == 'DM')
+
+#I want INSIDE to be the default type (vs BORDER)
+levels(data$Type) <- c('INSIDE', 'BORDER')
 
 # create log total seed count 
 data$logTSC <- log10(data$TSC)
@@ -91,40 +92,67 @@ plot_epi_forest <- function(epi_data, main="Title") {
 
 
 ### Functions being worked on ----
-get_epi_stats <- function(plantset, df=df, Y=Y) {
-  model = lm(Y ~ MA + MB + DM, data=df, subset = (df$Set == plantset), na.action = na.exclude)
+
+
+"
+get_epi_mapk_stats <- function(genpair, formula, df){
+  dfsubset <- subset_genepair(p=genpair, df=df)
+  model <- lm(formula, dfsubset) #m1
   e_est <- as.numeric(coef(model)['DM'])
-  lowerCI <- confint(model)[4]
-  upperCI <- confint(model)[8]
-  rsquared <- summary(model)$r.squared
+  lowerCI <- confint(model)[4,1]
+  upperCI <- confint(model)[4,2]
+  rsquared <- summary(model)$adj.r.squared
   pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
   
-  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
+  result <- c(genpair, e_est, lowerCI, upperCI, rsquared, pval_e)
   return(result)
 }
+"
 
+### Models and model comparison ----
+# List of formulas to use 
+f.tsc <- formula(logTSC ~ MA + MB + DM )
+f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
+f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
+f.tsc.ef <- formula(logTSC ~ MA + MB + DM + Type + Flat)
 
-### List of formulas to use ----
-#should be 16
-f.tsc <- formula(logTSC ~ GeneA + GeneB + DM + Experiment)
-f.tsc.e
-f.tsc.f <- formula(logTSC ~ GeneA + GeneB + DM + Experiment + Experiment/Flat)
-f.tsc.ef
+f.ln <- formula(log10(LN) ~ MA + MB + DM)
+f.ln.e <- formula(log10(LN) ~ MA + MB + DM + Type)
+f.ln.f <- formula(log10(LN) ~ MA + MB + DM + Flat)
+f.ln.ef <- formula(log10(LN) ~ MA + MB + DM + Type + Flat)
 
-f.ln
-f.ln.e
-f.ln.f
-f.ln.ef
+f.dtb <- formula(log10(DTB) ~ MA + MB + DM)
+f.dtb.e <- formula(log10(DTB) ~ MA + MB + DM + Type)
+f.dtb.f <- formula(log10(DTB) ~ MA + MB + DM + Flat)
+f.dtb.ef <- formula(log10(DTB) ~ MA + MB + DM + Type + Flat)
 
-f.dtb
-f.dtb.e
-f.dtb.f
-f.dtb.ef
+f.spf <- formula(log10(SPF) ~ MA + MB + DM)
+f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
+f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
+f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-f.spf
-f.spf.e
-f.spf.f
-f.spf.ef
+# TSC -- models and model comparison
+
+get_epi_stats <- function(plantset, formula, df){
+  dfsubset <- subset(df, Set == plantset)
+  model <- lm(formula, data=dfsubset, na.action = na.exclude)
+  #Extract stats
+  e_est <- as.numeric(coef(model)['DM'])
+  lowerCI <- confint(model)[4,1]
+  upperCI <- confint(model)[4,2]
+  rsquared <- summary(model)$adj.r.squared
+  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
+  #Return stats
+  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
+  return(result)
+  }
+
+get_epi_stats(11, f.tsc, data)
+
+### For some reason my subset is breaking everything?
+summary(lm((logTSC ~ Type), data=data, subset = (Set == 1)))
+
+# LN -- models and model comparison
 
 ## Getting results and cranking out graphs -- should be a total of 16 figs as currently requested. ####
   
@@ -149,7 +177,7 @@ plot4 <- plot_epi_forest(df_SPF_results, "Trait: Seeds per Fruit")
 plot4
 
 
-################################################################################
+## EDA ----
 
 #subset set 1
 datas1 <- subset(data, data$Set == 1)
@@ -169,6 +197,7 @@ mod3 <- lmer(logTSC ~ MA + MB + DM + (1|Flat), data=datas1, na.action = na.exclu
 summary(mod2)
 summary(mod3)
 
+anova(mod1, mod2)
 
 ##Function to plot effects of flat
 setswflats <- c(1, 2, 3, 5, 7, 8, 11, 12, 14, 15, 18, 20)
