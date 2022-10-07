@@ -1,0 +1,303 @@
+#Load Libraries ----
+library(dplyr)
+require(lme4)
+require(ggplot2)
+require(ggpubr)
+source("~/Documents/Code/ElliesFavFunctions.R")
+
+
+### Conjunction Junction, what's your function? ----
+
+#This function turns WT to 0 and MUT to 1. 
+func_t1 <- function(x){
+  x = ifelse(x=='WT', 0, 1)
+  return(x)
+}
+
+#This function gets wt/genea/geneb/dm subset of dataset for given gene pair
+subset_genepair <- function(p=genpair, df=df){
+  genea <- sub('_.*', "", p)
+  geneb <- sub('[0-9]*_', "", p)
+  df_sub <- subset(df, Genotype == ('Col') | 
+                     Genotype == genea | 
+                     Genotype == geneb|
+                     Genotype == p)
+  # Add GeneA, GeneB, and DM columns. All should be 1 or 0. 
+  df_sub <- df_sub %>% mutate(DM = ifelse(mutnum==2, 1, 0))
+  df_sub <- df_sub %>% mutate(GeneA = ifelse((Genotype==genea|mutnum==2), 1, 0))
+  df_sub <- df_sub %>% mutate(GeneB = ifelse((Genotype==geneb|mutnum==2), 1, 0))
+  return(df_sub)
+}
+
+##This function takes in a list of gene pairs and outputs anova model comparisons:
+mod_comp_mapk <- function(genpair, df, f1, f2){
+  dfsubset <- subset_genepair(p=genpair, df=df)
+  m1 <- lm(f1, dfsubset) #m1
+  m2 <- lm(f2, dfsubset)
+  aov <- anova(m1, m2)
+  pval <- aov[6][2,1]
+  if (pval < 0.05) signif= "TRUE" else signif="FALSE"
+  print(paste("The p value for gene pair ", genpair,  " is: ", pval, "p<.05 = ", signif))
+  return(aov)
+}
+
+# A function to collect epistasis estimates.
+# Takes gene pair, model formula, and data and return epistasis stats of interest:
+get_epi_mapk_stats <- function(genpair, formula, df){
+  dfsubset <- subset_genepair(p=genpair, df=df)
+  model <- lm(formula, dfsubset) #m1
+  e_est <- as.numeric(coef(model)['DM'])
+  lowerCI <- confint(model)[4,1]
+  upperCI <- confint(model)[4,2]
+  rsquared <- summary(model)$adj.r.squared
+  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
+  
+  result <- c(genpair, e_est, lowerCI, upperCI, rsquared, pval_e)
+  return(result)
+}
+
+#This function makes a df of epistasis stats for all gene pairs:
+get_epistasis_all_mapk <- function(plantsets, formula, df=data) {
+  #create empty results list
+  resultlist <- list()
+  
+  #Loop through gene pairs adding epistasis stats for all
+  for (i in plantsets){
+    v <- get_epi_mapk_stats(i, df=df, formula=formula)
+    resultlist[[i]] <- v
+  }
+  
+  
+  #organize/format data
+  df_result <- as.data.frame(t(as.data.frame(resultlist, 
+                                             row.names = c('Genepair', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e'),
+                                             byrow=FALSE)))
+  #Make numeric values numeric
+  df_result$e_est <- as.numeric(df_result$e_est)
+  df_result$lowerCI <- as.numeric(df_result$lowerCI)
+  df_result$upperCI <- as.numeric(df_result$upperCI)
+  df_result$rsquared <- as.numeric(df_result$rsquared)
+  df_result$pval_e <- as.numeric(df_result$pval_e)
+  
+  #sort by epistasis estimate
+  df_results <- arrange(df_result, e_est)
+  #Add result column to color code.
+  df_results <- df_results %>% mutate(Epistasis_Direction = case_when(lowerCI < 0 & upperCI < 0  ~ 'Negative',
+                                                                      lowerCI > 0 & upperCI > 0 ~ 'Positive',
+                                                                      lowerCI <=  0 & upperCI >= 0 ~ 'Not Detected'))
+  #Add 'row' column for plotting in correct order
+  df_results$row <- c(1:1:dim(df_results)[1])
+  return(df_results)
+}
+
+#This function makes a rad forest plot from a dataframe of epistasis values
+plot_epi_forest <- function(epi_data, main="Title") {
+  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+    geom_point(shape = 18, size = 3) +  
+    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
+    geom_vline(xintercept = 0, color = "black", cex = .5) +
+    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Genepair, trans = "reverse", expand = c(0,0.5)) +
+    ggtitle(main) +
+    xlab("Epistasis Value [95% CI]") +
+    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.y.left = element_text(size = 10, colour = "black"),
+          axis.text.y = element_text(size = 12, colour = "black"),
+          axis.text.x.bottom = element_text(size = 10, colour = "black"),
+          axis.title.x = element_text(size = 12, colour = "black"))
+  plot
+}
+
+## Function that converts epistasis dataframes into heatmap form:
+format_data_for_heatmap <- function(df, genes){
+  df['GeneA'] <- gsub("_\\d*", '', df$Genepair)
+  df['GeneB'] <- gsub("\\d*_", '', df$Genepair)
+  df['GeneA'] <- factor(df$GeneA, levels = genes)
+  df['GeneB'] <- factor(df$GeneB, levels = genes)
+  dff <- df
+  dff['GeneA'] <- df['GeneB']
+  dff['GeneB'] <- df['GeneA']
+  resultdf <- rbind(df, dff)
+  return(resultdf)
+}
+
+##Functions to make heat map:
+mapepiheat <- function(df, main="Title"){
+  ggplot(df, aes(x = GeneA, y = GeneB, fill = Epistasis_Direction)) +
+    geom_tile() +
+    coord_fixed() + 
+    ggtitle(main) +
+    scale_fill_manual(values = c("Negative" = "#D9027D", "Not Detected" = "#FFFFCC", "Positive" = "blue")) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          panel.background = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+}
+
+# This function does a gradient (which seems sketchy on ns data but idk. Should combine these two somehow)
+mapepiheatg <- function(df, main="Title"){
+  ggplot(df, aes(x = GeneA, y = GeneB, fill = e_est)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#D9027D", mid = "#FFFFCC", high = "blue") +
+    coord_fixed() +
+    ggtitle(main) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          panel.background = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+}
+
+
+### Load + Process Data ----
+setwd("~/Documents/Projects/Arabidopsis_fitness_Melissa")
+df = read.delim("MAPK_DEPI_data_080522.txt", sep = "\t", header = T)
+dfOG <- df
+
+#good news someone already got rid of mapk 6_20
+factorcol <- c(1, 2, 4, 6:8,14:25)
+df[,factorcol] <- lapply(df[,factorcol], factor)
+
+#Turn WT to 0 and MUT to 1
+df <- df %>% mutate_at(vars(matches("MPK")), func_t1)
+
+#Add column for mut_num
+df <- df %>% mutate(mutnum = MPK1 + MPK3 + MPK5 + MPK6 + MPK8 + MPK9 + MPK13 + 
+                MPK14 + MPK16 + MPK17 + MPK18 + MPK20)
+
+#Change "Flat" so that the flat 1's don't match each other. 
+df <- df %>% mutate(Flat1 = paste(Experiment, Flat, sep="_"))
+
+#Some TSCs are 0 and cause the model to break
+df_tsc <- df %>% mutate(logTSC = log10(TSC))
+df_tsc <- subset(df_tsc, is.finite(df_tsc$logTSC)) #Is it bad to throw these out?
+
+df_SN <- df %>% mutate(logSN = log10(SN))
+df_SN <- subset(df_SN, is.finite(df_SN$logSN))
+
+df_SPF <- df %>% mutate(logSPF = log10(SPF))
+df_SPF <- subset(df_SPF, is.finite(df_SPF$logSPF))
+
+
+### Model generation and model comparison ----
+
+#List of double mutants (for looping)
+double_mutants <- levels(df$Genotype)[grep("_", levels(df$Genotype))]
+
+# Model formulas:
+f1 <- formula(logTSC ~ GeneA + GeneB + DM + Experiment)
+f2 <- formula(logTSC ~ GeneA + GeneB + DM + Experiment + Experiment/Flat)
+f3 <- formula(log(SN) ~ GeneA + GeneB + DM + Experiment)
+f4 <- formula(log(SN) ~ GeneA + GeneB + DM + Experiment + Experiment/Flat)
+f5 <- formula(log(SPF) ~ GeneA + GeneB + DM + Experiment)
+f6 <- formula(log(SPF) ~ GeneA + GeneB + DM + Experiment + Experiment/Flat)
+
+
+#Model comparison, include flat vs. no flat, total seed count
+for (item in double_mutants){
+  mod_comp_mapk(item, df_tsc, f1, f2)
+} 
+#Flat: 18 | No Flat: 5
+
+#Model comparison, include flat vs. no flat, Silique Number
+for (item in double_mutants){
+  mod_comp_mapk(item, df_SN, f3, f4)
+}
+# Flat: 20 | No Flat: 3
+
+#Model comparison, include flat vs. no flat, Seeds per Fruit
+for (item in double_mutants){
+  mod_comp_mapk(item, df_SPF, f5, f6)
+}
+
+# Flat: 6 | No Flat: 17
+
+
+### Get epistasis values:
+
+#get epistasis df for TSC
+f1_logTSC_epivals <- get_epistasis_all_mapk(double_mutants, f1, df=df_tsc)
+f2_logTSC_epivals <- get_epistasis_all_mapk(double_mutants, f2, df=df_tsc)
+
+#get epistasis df for silique number bc why not
+f3_logSN_epivals <- get_epistasis_all_mapk(double_mutants, f3, df=df_SN)
+f4_logSN_epivals <- get_epistasis_all_mapk(double_mutants, f4, df=df_SN)
+
+#epistasis for seeds per fruit bc why not
+f5_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f5, df=df_SPF)
+f6_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f6, df=df_SPF)
+
+
+### make Cool Graphs For Epistasis:
+
+plotlogTSC <- plot_epi_forest(f1_logTSC_epivals, main="Epistasis Values\nTotal Seed Count\nw/out flat")
+plotlogTSCf <- plot_epi_forest(f2_logTSC_epivals, main="Epistasis Values\nTotal Seed Count\nwith flat")
+
+plotlogSN <- plot_epi_forest(f3_logSN_epivals, main="Epistasis Values\nSilique Number\nw/out flat")
+plotlogSNf <- plot_epi_forest(f4_logSN_epivals, main="Epistasis Values\nSilique Number\nwith flat")
+
+plotlogSPF <- plot_epi_forest(f5_logSPF_epivals, main="Epistasis Values\nSeeds Per Fruit\nw/out flat")
+plotlogSPFf <- plot_epi_forest(f6_logSPF_epivals, main="Epistasis Values\nSeeds Per Fruit\nwith flat")
+
+#Three plots
+threeepiplots <- ggarrange(plotlogTSCf, plotlogSNf, plotlogSPF, 
+          ncol=3,
+          common.legend=TRUE,
+          legend='right')
+threeepiplots
+
+#annotate_figure(threeepiplots, 
+#                top= text_grob('Epistasis Values', face = "bold", size = 15))
+
+#Six plots
+ggarrange(plotlogTSC, plotlogSN, plotlogSPF, 
+          plotlogTSCf, plotlogSNf, plotlogSPFf) #Woot woot!
+
+### Make a cool heatmap showing epi value sof different mapk combos
+
+##Format data:
+genelevels <- c("mpk1", "mpk3","mpk5", "mpk6", "mpk8", "mpk9", "mpk13", "mpk14", "mpk16", "mpk17", "mpk18", "mpk20")
+
+f2_logTSC_epivalsF <- format_data_for_heatmap(df=f2_logTSC_epivals, genes=genelevels)
+df_heatmap_SN <- format_data_for_heatmap(df=f4_logSN_epivals, genes=genelevels)
+df_heatmap_SPF <- format_data_for_heatmap(df=f5_logSPF_epivals, genes=genelevels)
+
+
+## Generate plots
+#heat map positive/negative/nd | TSC
+heatplotTSC <- mapepiheat(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
+heatplotTSCg <- mapepiheatg(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
+##heat maps positive/negative/nd | SN
+heatplotSN <- mapepiheat(df_heatmap_SN, main="Epistasis: Silique Number")
+heatplotSNg <- mapepiheatg(df_heatmap_SN, main="Epistasis: Silique Number")
+##heat maps positive/negative/nd | SPF
+heatplotSPF <- mapepiheat(df_heatmap_SPF, main="Epistasis: Seeds Per Fruit")
+heatplotSPFg <- mapepiheatg(df_heatmap_SPF, main="Epistasis: Seeds Per Fruit")
+
+##Display plots :)
+ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
+          heatplotTSC, heatplotSN, heatplotSPF, 
+          ncol=3, nrow=2,
+          common.legend=TRUE,
+          legend='right')
+
+gradientplots <- ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
+                           ncol=3, nrow=1,
+                           common.legend=TRUE,
+                           legend='none')
+
+sigplots <- ggarrange(heatplotTSC, heatplotSN, heatplotSPF, 
+                      ncol=3, nrow=1,
+                      common.legend=TRUE,
+                      legend='bottom')
+
+ggarrange(gradientplots, sigplots, ncol=1, nrow=2)
+
