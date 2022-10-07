@@ -33,7 +33,7 @@ data = subset(data, is.finite(data$logTSC)) #remove nans
 #Should review this -- supposedly some are duplicate genes. 
 setlist <- as.integer(levels(data$Set))
 #2r is a repeat of set 2. Here I change it to 2000. 
-setlist[is.na(setlist)] <- 2000
+setlist[is.na(setlist)] <- '2r'
 setlist <- as.character(setlist)
 
 ### Conjunction junction, what's your function?
@@ -41,10 +41,24 @@ setlist <- as.character(setlist)
 
 #1. Get_epi_stats. Gets epistasis values for plant set. 
     # Returns a vector of relevant values
-
+get_epi_stats <- function(plantset, formula, df){
+  dfsubset <- subset(df, Set == plantset)
+  model <- lm(formula, data=dfsubset, na.action = na.exclude)
+  #Extract stats
+  e_est <- as.numeric(coef(model)['DM'])
+  lowerCI <- confint(model)[4,1]
+  upperCI <- confint(model)[4,2]
+  rsquared <- summary(model)$adj.r.squared
+  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
+  #Return stats
+  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
+  return(result)
+}
 
 #2. Gets all epistasis values for trait. 
 # Returns a dataframe w epistasis values that you can then plot with plot_epi_forest
+
+#This is gonna be broken now. 
 get_epistasis_fortrait <- function(plantsets, Y, df=data) {
  
   resultlist <- list()
@@ -89,28 +103,8 @@ plot_epi_forest <- function(epi_data, main="Title") {
   plot
 }
 
-
-
-### Functions being worked on ----
-
-
-"
-get_epi_mapk_stats <- function(genpair, formula, df){
-  dfsubset <- subset_genepair(p=genpair, df=df)
-  model <- lm(formula, dfsubset) #m1
-  e_est <- as.numeric(coef(model)['DM'])
-  lowerCI <- confint(model)[4,1]
-  upperCI <- confint(model)[4,2]
-  rsquared <- summary(model)$adj.r.squared
-  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
-  
-  result <- c(genpair, e_est, lowerCI, upperCI, rsquared, pval_e)
-  return(result)
-}
-"
-
-### Models and model comparison ----
-# List of formulas to use 
+### Models and model comparison -----
+# List of formulas/models
 f.tsc <- formula(logTSC ~ MA + MB + DM )
 f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
 f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
@@ -131,32 +125,60 @@ f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-# TSC -- models and model comparison
 
-get_epi_stats <- function(plantset, formula, df){
-  dfsubset <- subset(df, Set == plantset)
-  model <- lm(formula, data=dfsubset, na.action = na.exclude)
-  #Extract stats
-  e_est <- as.numeric(coef(model)['DM'])
-  lowerCI <- confint(model)[4,1]
-  upperCI <- confint(model)[4,2]
-  rsquared <- summary(model)$adj.r.squared
-  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
-  #Return stats
-  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
-  return(result)
-  }
+mod_comp_fit <- function(exp, df, f1, f2){
+  dfsubset <- subset(df, Set == exp)
+  m1 <- lm(f1, dfsubset) #m1
+  m2 <- lm(f2, dfsubset)
+  aov <- anova(m1, m2)
+  pval <- aov[6][2,1]
+  if (pval < 0.05) signif= "TRUE" else signif="FALSE"
+  print(paste("The p value for experiment ", exp,  " is: ", pval, "p<.05 = ", signif))
+  print(summary(m1))
+  result <- c(exp, pval, signif)
+  return(aov)
+}
 
-get_epi_stats(11, f.tsc, data)
+bigpigm <- lmer(logTSC ~ MA + MB + DM + (1|Set), data=data)
+summary(bigpigm)
+confint(bigpigm)
+bigpigm2 <- lmer(logTSC ~ MA + MB + DM + Type + (1|Set), data=data)
+summary(bigpigm2)
+confint(bigpigm2)
+bigpigmD <- lmer(logTSC ~ MA + MB + DM + (DM|Set), data=data)
+summary(bigpigmD)
+confint(bigpigmD)
 
-### For some reason my subset is breaking everything?
-summary(lm((logTSC ~ Type), data=data, subset = (Set == 1)))
 
-# LN -- models and model comparison
 
-## Getting results and cranking out graphs -- should be a total of 16 figs as currently requested. ####
+
+
+mod_comp_fit(1, data, f.tsc, f.tsc.e)
+mod_comp_fit(11, data, f.tsc, f.tsc.e)
+
+for (item in setlist){
+  mod_comp_fit(item, data, f.tsc, f.tsc.e)
+} 
+
+
+
+# TSC  ----
+
+
+
+
+# LN ----
+
+
+
+
+
+### Getresults and crank out graphs -- should be a total of 16 figs as currently requested. ####
   
 #TSC epistasis results no covariates
+get_epi_stats(11, f.tsc.e, data)
+## This will be broken til I fix the other function
+
 df_logTSC_results <- get_epistasis_fortrait(setlist, data$logTSC)
 plot1 <- plot_epi_forest(df_logTSC_results, "Trait: Total Seed Count")
 plot1
