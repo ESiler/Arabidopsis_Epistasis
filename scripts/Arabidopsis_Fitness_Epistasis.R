@@ -109,6 +109,7 @@ f.tsc <- formula(logTSC ~ MA + MB + DM )
 f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
 f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
 f.tsc.ef <- formula(logTSC ~ MA + MB + DM + Type + Flat)
+tsc_formulas <- c(f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
 
 f.ln <- formula(log10(LN) ~ MA + MB + DM)
 f.ln.e <- formula(log10(LN) ~ MA + MB + DM + Type)
@@ -126,39 +127,47 @@ f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
 
-mod_comp_fit <- function(exp, df, f1, f2){
+mod_comp_fit <- function(exp, df, f1, f2, f3, f4){
   dfsubset <- subset(df, Set == exp)
-  m1 <- lm(f1, dfsubset) #m1
+  m1 <- lm(f1, dfsubset) 
   m2 <- lm(f2, dfsubset)
-  aov <- anova(m1, m2)
-  pval <- aov[6][2,1]
-  if (pval < 0.05) signif= "TRUE" else signif="FALSE"
-  print(paste("The p value for experiment ", exp,  " is: ", pval, "p<.05 = ", signif))
-  print(summary(m1))
-  result <- c(exp, pval, signif)
-  return(aov)
+  m3 <- lm(f3, dfsubset) 
+  m4 <- lm(f4, dfsubset)
+  return(m4)
+}
+#pvalsm1 <- mod_comp_fit(1, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
+#why doeschanging teh orer change the values. That is bad. 
+tmpm4 <- mod_comp_fit(11, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
+
+mod_comp_fit(11, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
+## I think I'm just going to make an adjusted r2 heatmap for model comparison
+
+#Function to return adjusted r-squared valued from list of formulas ----
+mod_comp_ar2 <- function(exp, df, formulalist){
+  #Get subset from specific experiment
+  dfsubset <- subset(df, Set == exp)
+  #initialize results vector (should be 4 adjr2s)
+  v <- vector(length = length(formulalist))
+  i <- 0
+  #Get adjr2 values and add to 
+  for(item in formulalist){
+    m <- lm(item, dfsubset) 
+    i <- i + 1
+    summ <- summary(m)
+    adjr2 <- summ$adj.r.squared
+    v[i] <- adjr2
+  }
+  return(v)
+} 
+#mod_comp_ar2(1,data,tsc_formulas) works
+m <- matrix(nrow = 4)
+for(item in sets_with_flats){
+  stuff <- mod_comp_ar2(item, data, tsc_formulas)
+  print(stuff)
 }
 
-bigpigm <- lmer(logTSC ~ MA + MB + DM + (1|Set), data=data)
-summary(bigpigm)
-confint(bigpigm)
-bigpigm2 <- lmer(logTSC ~ MA + MB + DM + Type + (1|Set), data=data)
-summary(bigpigm2)
-confint(bigpigm2)
-bigpigmD <- lmer(logTSC ~ MA + MB + DM + (DM|Set), data=data)
-summary(bigpigmD)
-confint(bigpigmD)
-
-
-
-
-
-mod_comp_fit(1, data, f.tsc, f.tsc.e)
-mod_comp_fit(11, data, f.tsc, f.tsc.e)
-
-for (item in setlist){
-  mod_comp_fit(item, data, f.tsc, f.tsc.e)
-} 
+sets_with_flats <- setlist[1:8]
+mod_comp_ar2(25, data, tsc_formulas)
 
 
 
