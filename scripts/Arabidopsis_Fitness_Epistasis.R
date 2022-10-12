@@ -126,20 +126,46 @@ f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
+## Step 1: Edge vs. No Edge ----
 
-mod_comp_fit <- function(exp, df, f1, f2, f3, f4){
+#takes experiment number, dataframe, and two fomulas
+#returns model 1 adjusted r-squared,
+#model 2 adjusted r-squared, and
+#anova p-value
+mod_comp_fit <- function(exp, df, f1, f2){
   dfsubset <- subset(df, Set == exp)
   m1 <- lm(f1, dfsubset) 
   m2 <- lm(f2, dfsubset)
-  m3 <- lm(f3, dfsubset) 
-  m4 <- lm(f4, dfsubset)
-  return(m4)
+  sm1 <- summary(m1)
+  sm2 <- summary(m2)
+  a <- anova(m1,m2)
+  m1ar2 <- sm1$adj.r.squared
+  m2ar2 <- sm2$adj.r.squared
+  apval <- a$`Pr(>F)`[2]
+  results <- data.frame(exp, m1ar2, m2ar2, apval)
+  #print(results)
+  return(results)
 }
-#pvalsm1 <- mod_comp_fit(1, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
-#why doeschanging teh orer change the values. That is bad. 
-tmpm4 <- mod_comp_fit(11, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
+mod_comp_fit(11, data, f.tsc, f.tsc.e)
 
-mod_comp_fit(11, data, f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
+#Input data, list of experiments, and formulas
+#Output a dataframe of model comp stats
+mod_comp_fit_loop <- function(explist, df, f1, f2){
+  dfr = NULL
+  for(i in explist){
+    r <- mod_comp_fit(i,df=df,f1=f1,f2=f2)
+    dfr=rbind(dfr, r)
+  }
+  return(dfr)
+}
+
+df_comp_tsc_edge <- mod_comp_fit_loop(setlist, data, f.tsc, f.tsc.e)
+
+
+
+
+
+
 ## I think I'm just going to make an adjusted r2 heatmap for model comparison
 
 #Function to return adjusted r-squared valued from list of formulas ----
@@ -178,34 +204,6 @@ mod_comp_ar2(25, data, tsc_formulas)
 
 # LN ----
 
-
-
-
-
-### Getresults and crank out graphs -- should be a total of 16 figs as currently requested. ####
-  
-#TSC epistasis results no covariates
-get_epi_stats(11, f.tsc.e, data)
-## This will be broken til I fix the other function
-
-df_logTSC_results <- get_epistasis_fortrait(setlist, data$logTSC)
-plot1 <- plot_epi_forest(df_logTSC_results, "Trait: Total Seed Count")
-plot1
-
-#Days to Bolt epistasis results no covariates
-df_DTB_results <- get_epistasis_fortrait(setlist, log10(data$DTB))
-plot2 <- plot_epi_forest(df_DTB_results, "Trait: Days to Bolt")
-plot2
-
-#leaf number epistasis results no covariates
-df_LN_results <- get_epistasis_fortrait(setlist, log10(data$LN))
-plot3 <- plot_epi_forest(df_LN_results, "Trait: Leaf Number")
-plot3
-
-#Seed per Fruit epistasis results no covariates
-df_SPF_results <- get_epistasis_fortrait(setlist, log10(data$SPF))
-plot4 <- plot_epi_forest(df_SPF_results, "Trait: Seeds per Fruit")
-plot4
 
 
 ## EDA ----
@@ -266,6 +264,8 @@ summary(m_allflats)
 #(and make cool heat map for same)
 
 plot(TSC ~ Type, data=data)
+plot(logTSC ~ Type, data=data)
+
 m_edgemiddle <- lm(TSC ~ Type, data=data)
 summ <- summary(m_edgemiddle)
 summ$adj.r.squared
@@ -273,4 +273,34 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
    summ$fstatistic[2],
    summ$fstatistic[3],
    lower.tail = FALSE)
+
+
+
+
+### Getresults and crank out graphs -- should be a total of 16 figs as currently requested. ####
+
+#TSC epistasis results no covariates
+get_epi_stats(11, f.tsc.e, data)
+## This will be broken til I fix the other function
+
+df_logTSC_results <- get_epistasis_fortrait(setlist, data$logTSC)
+plot1 <- plot_epi_forest(df_logTSC_results, "Trait: Total Seed Count")
+plot1
+
+#Days to Bolt epistasis results no covariates
+df_DTB_results <- get_epistasis_fortrait(setlist, log10(data$DTB))
+plot2 <- plot_epi_forest(df_DTB_results, "Trait: Days to Bolt")
+plot2
+
+#leaf number epistasis results no covariates
+df_LN_results <- get_epistasis_fortrait(setlist, log10(data$LN))
+plot3 <- plot_epi_forest(df_LN_results, "Trait: Leaf Number")
+plot3
+
+#Seed per Fruit epistasis results no covariates
+df_SPF_results <- get_epistasis_fortrait(setlist, log10(data$SPF))
+plot4 <- plot_epi_forest(df_SPF_results, "Trait: Seeds per Fruit")
+plot4
+
+
 
