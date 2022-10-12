@@ -8,6 +8,7 @@ library(ggplot2)
 library(dplyr)
 library(ggpubr)
 library(tidyr)
+library(gridExtra)
 
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
 
@@ -127,7 +128,7 @@ f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-## Step 1: Edge vs. No Edge ----
+## Model Comparison and Selection----
 
 #takes experiment number, dataframe, and two fomulas
 #returns model 1 adjusted r-squared,
@@ -147,7 +148,8 @@ mod_comp_fit <- function(exp, df, f1, f2){
   #print(results)
   return(results)
 }
-mod_comp_fit(11, data, f.tsc, f.tsc.e)
+
+#mod_comp_fit(11, data, f.tsc, f.tsc.e) #test data
 
 #Input data, list of experiments, and formulas
 #Output a dataframe of model comp stats
@@ -160,7 +162,7 @@ mod_comp_fit_loop <- function(explist, df, f1, f2){
   return(dfr)
 }
 
-#HEATWAVES BE FAKIN ME OUT ----
+#make model comparison heatmaps----
 make_r2_heatmap <- function(df, main='Title'){
   #number with significant pvals from anova
   edge_exps <- df$exp[(df$apval < .05)]
@@ -186,63 +188,53 @@ make_r2_heatmap <- function(df, main='Title'){
     labs(title = r2, subtitle = r)
 }
 
-
+####Edge vs. no edge----
 #make dfs for model comps
 df_comp_tsc_edge <- mod_comp_fit_loop(setlist, data, f.tsc, f.tsc.e)
 df_comp_ln_edge <- mod_comp_fit_loop(setlist, data, f.ln, f.ln.e)
 df_comp_dtb_edge <- mod_comp_fit_loop(setlist, data, f.dtb, f.dtb.e)
 df_comp_spf_edge <- mod_comp_fit_loop(setlist, data, f.spf, f.spf.e)
 
-#~~~~~~~~~~~HEAT WAVES~~~~~~~~~~~~~
+#Generates model comp heat maps and results
+#for edge effects with different y variables
 make_r2_heatmap(df_comp_tsc_edge)
 make_r2_heatmap(df_comp_ln_edge)
 make_r2_heatmap(df_comp_dtb_edge)
 make_r2_heatmap(df_comp_spf_edge)
+#conclusion: inconclusive
 
-
-
-
-
-#Function to return adjusted r-squared valued from list of formulas ----
-mod_comp_ar2 <- function(exp, df, formulalist){
-  #Get subset from specific experiment
-  dfsubset <- subset(df, Set == exp)
-  #initialize results vector (should be 4 adjr2s)
-  v <- vector(length = length(formulalist))
-  i <- 0
-  #Get adjr2 values and add to 
-  for(item in formulalist){
-    m <- lm(item, dfsubset) 
-    i <- i + 1
-    summ <- summary(m)
-    adjr2 <- summ$adj.r.squared
-    v[i] <- adjr2
-  }
-  return(v)
-} 
-
-
-#mod_comp_ar2(1,data,tsc_formulas) works
-m <- matrix(nrow = 4)
-for(item in sets_with_flats){
-  stuff <- mod_comp_ar2(item, data, tsc_formulas)
-  print(stuff)
-}
-
+####Flat vs. No Flat ----
 sets_with_flats <- setlist[1:8]
-mod_comp_ar2(25, data, tsc_formulas)
+
+df_comp_tsc_flat <- mod_comp_fit_loop(sets_with_flats, data, f.tsc, f.tsc.f)
+df_comp_ln_flat <- mod_comp_fit_loop(sets_with_flats, data, f.ln, f.ln.f)
+df_comp_dtb_flat <- mod_comp_fit_loop(sets_with_flats, data, f.dtb, f.dtb.f)
+df_comp_spf_flat <- mod_comp_fit_loop(sets_with_flats, data, f.spf, f.spf.f)
+
+p1 <- make_r2_heatmap(df_comp_tsc_flat)
+p2 <- make_r2_heatmap(df_comp_ln_flat)
+p3 <- make_r2_heatmap(df_comp_dtb_flat)
+p4 <- make_r2_heatmap(df_comp_spf_flat)
+
+grid.arrange(p1,p2,p3,p4,nrow=1)
+#Conclusion: include flat
+
+####Flat with and without edge effects----
+df_comp_tsc_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.tsc.f, f.tsc.ef)
+df_comp_ln_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.ln.f, f.ln.ef)
+df_comp_dtb_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.dtb.f, f.dtb.ef)
+df_comp_spf_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.spf.f, f.spf.ef)
+
+p5 <- make_r2_heatmap(df_comp_tsc_flat)
+p6 <- make_r2_heatmap(df_comp_ln_flat)
+p7 <- make_r2_heatmap(df_comp_dtb_flat)
+p8 <- make_r2_heatmap(df_comp_spf_flat)
+
+grid.arrange(p5,p6,p7,p8,nrow=1)
+#Conclusion: Always separate out flat experiments and include flat. 
 
 
-
-# TSC  ----
-
-
-
-
-# LN ----
-
-
-
+#Run analysis with and without edge effects. 
 ## EDA ----
 
 #subset set 1
@@ -311,10 +303,13 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
    summ$fstatistic[3],
    lower.tail = FALSE)
 
+################################################################################
+
+### Getresults and crank out graphs -- should be a total of 8 figs as currently requested. ####
 
 
 
-### Getresults and crank out graphs -- should be a total of 16 figs as currently requested. ####
+
 
 #TSC epistasis results no covariates
 get_epi_stats(11, f.tsc.e, data)
