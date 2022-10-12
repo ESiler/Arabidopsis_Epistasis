@@ -29,81 +29,19 @@ levels(data$Type) <- c('INSIDE', 'BORDER')
 
 # create log total seed count 
 data$logTSC <- log10(data$TSC)
-data = subset(data, is.finite(data$logTSC)) #remove nans
+data <- subset(data, is.finite(data$logTSC)) #remove nans
+
+#In Sets, change 2r to 2222 (it is a repeat of exp 2)
+levels(data$Set)[10] <- 2222
 
 #the setlist is the list of plant sets I'm looking at. 
 #Should review this -- supposedly some are duplicate genes. 
-setlist <- as.integer(levels(data$Set))
-#2r is a repeat of set 2. Here I change it to 2000. 
-setlist[is.na(setlist)] <- '2r'
-setlist <- as.character(setlist)
+setlist <- as.character(sort(as.integer(levels(data$Set))))
+sets_with_flats <- as.character(sort(as.integer(as.character(unique(data$Set[data$Flat == '2'])))))
+sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 
 ### Conjunction junction, what's your function?
 # Define Functions ----
-
-#1. Get_epi_stats. Gets epistasis values for plant set. 
-    # Returns a vector of relevant values
-get_epi_stats <- function(plantset, formula, df){
-  dfsubset <- subset(df, Set == plantset)
-  model <- lm(formula, data=dfsubset, na.action = na.exclude)
-  #Extract stats
-  e_est <- as.numeric(coef(model)['DM'])
-  lowerCI <- confint(model)[4,1]
-  upperCI <- confint(model)[4,2]
-  rsquared <- summary(model)$adj.r.squared
-  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
-  #Return stats
-  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
-  return(result)
-}
-
-#2. Gets all epistasis values for trait. 
-# Returns a dataframe w epistasis values that you can then plot with plot_epi_forest
-
-#This is gonna be broken now. 
-get_epistasis_fortrait <- function(plantsets, Y, df=data) {
- 
-  resultlist <- list()
-  
-  for (i in plantsets){
-    v <- get_epi_stats(i, df=df, Y=Y)
-    resultlist[[i]] <- as.numeric(v)
-  }
-  df_result <- as.data.frame(t(as.data.frame(resultlist, 
-                                             row.names = c('Set', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e'),
-                                             byrow=FALSE)))
-  
-  df_results <- arrange(df_result, e_est)
-  df_results$row <- c(1:1:dim(df_results)[1])
-  
-  df_results <- df_results %>% mutate(Epistasis_Direction = case_when(lowerCI < 0 & upperCI < 0  ~ 'Negative',
-                                                                      lowerCI > 0 & upperCI > 0 ~ 'Positive',
-                                                                      lowerCI <=  0 & upperCI >= 0 ~ 'Not Detected'))
-}
-
-# plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
-  # Returns a ggplot plot
-plot_epi_forest <- function(epi_data, main="Title") {
-  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
-    geom_point(shape = 18, size = 3) +  
-    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
-    geom_vline(xintercept = 0, color = "black", cex = .5) +
-    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Set, trans = "reverse", expand = c(0,0.5)) +
-    ggtitle(main) +
-    xlab("Epistasis Value [95% CI]") +
-    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
-    theme_bw() +
-    theme(panel.border = element_blank(),
-          panel.background = element_blank(),
-          panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(), 
-          axis.line = element_line(colour = "black"),
-          axis.text.y.left = element_text(size = 10, colour = "black"),
-          axis.text.y = element_text(size = 12, colour = "black"),
-          axis.text.x.bottom = element_text(size = 10, colour = "black"),
-          axis.title.x = element_text(size = 12, colour = "black"))
-  plot
-}
 
 ### Models and model comparison -----
 # List of formulas/models
@@ -204,8 +142,6 @@ make_r2_heatmap(df_comp_spf_edge)
 #conclusion: inconclusive
 
 ####Flat vs. No Flat ----
-sets_with_flats <- setlist[1:8]
-
 df_comp_tsc_flat <- mod_comp_fit_loop(sets_with_flats, data, f.tsc, f.tsc.f)
 df_comp_ln_flat <- mod_comp_fit_loop(sets_with_flats, data, f.ln, f.ln.f)
 df_comp_dtb_flat <- mod_comp_fit_loop(sets_with_flats, data, f.dtb, f.dtb.f)
@@ -303,17 +239,108 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
    summ$fstatistic[3],
    lower.tail = FALSE)
 
-################################################################################
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### Getresults and crank out graphs -- should be a total of 8 figs as currently requested. ####
+### Get epistasis results and crank out graphs ----
+
+# should be a total of 8 figs as currently requested
+#tsc, ln, dtb, and spf with and without edge effects. 
+#But exps with flat effect will need to be modeled separately 
+
+## Functions for this section: ----
+#1. Get_epi_stats. Gets epistasis values for plant set. 
+# Returns a vector of relevant values
+get_epi_stats <- function(plantset, formula, df){
+  dfsubset <- subset(df, Set == plantset)
+  model <- lm(formula, data=dfsubset, na.action = na.exclude)
+  #Extract stats
+  e_est <- as.numeric(coef(model)['DM'])
+  lowerCI <- confint(model)[4,1]
+  upperCI <- confint(model)[4,2]
+  rsquared <- summary(model)$adj.r.squared
+  pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
+  #Return stats
+  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
+  return(result)
+}
+tmp <- get_epi_stats(2222, f.tsc.e, data) #Works :)
+
+#2. Gets all epistasis values for trait. 
+# Returns a dataframe w epistasis values that you can then plot with plot_epi_forest
+get_epistasis_for_formula <- function(plantsets, formula, df=data) {
+  
+  resultlist <- list()
+  
+  for (i in plantsets){
+    v <- get_epi_stats(i, formula=formula, df=df)
+    resultlist[[i]] <- as.numeric(v)
+  }
+  df_result <- as.data.frame(t(as.data.frame(resultlist, 
+                                             row.names = c('Set', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e'),
+                                             byrow=FALSE)))
+  df_results <- arrange(df_result, e_est)
+  df_results$row <- c(1:1:dim(df_results)[1])
+  
+  df_results <- df_results %>% mutate(Epistasis_Direction = case_when(lowerCI < 0 & upperCI < 0  ~ 'Negative',
+                                                                      lowerCI > 0 & upperCI > 0 ~ 'Positive',
+                                                                      lowerCI <=  0 & upperCI >= 0 ~ 'Not Detected'))
+}
+#test
+test_results <- get_epistasis_for_formula(as.character(sets_with_flats), f.dtb.f)
+
+#TSC results not edgy
+e_tsc_f <- get_epistasis_for_formula(sets_with_flats, f.dtb.f)
+e_tsc_a <- get_epistasis_for_formula(setlist, f.dtb)
+##Ugh it's trying to get data for sets that don't exist. It assumes there's numbers in between. 
+for(i in sets_with_flats){
+  print(i)
+}
+
+#TSC results edgy
+
+#DTB results not edgy
+
+#DTB results edgy
+
+#LN results not edgy
+
+#LN results edgy
+
+#SPF results edgy
+
+#SPF results not edgy
+
+## Multiplots ~~~~
+
+# plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
+# Returns a ggplot plot
+plot_epi_forest <- function(epi_data, main="Title") {
+  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+    geom_point(shape = 18, size = 3) +  
+    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
+    geom_vline(xintercept = 0, color = "black", cex = .5) +
+    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Set, trans = "reverse", expand = c(0,0.5)) +
+    ggtitle(main) +
+    xlab("Epistasis Value [95% CI]") +
+    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.y.left = element_text(size = 10, colour = "black"),
+          axis.text.y = element_text(size = 12, colour = "black"),
+          axis.text.x.bottom = element_text(size = 10, colour = "black"),
+          axis.title.x = element_text(size = 12, colour = "black"))
+  plot
+}
 
 
 
-
-
-#TSC epistasis results no covariates
-get_epi_stats(11, f.tsc.e, data)
-## This will be broken til I fix the other function
+#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+##### ALL BELOW THIS LINE ARE DEFUNCT
+## They will be broken til I fix the other function
 
 df_logTSC_results <- get_epistasis_fortrait(setlist, data$logTSC)
 plot1 <- plot_epi_forest(df_logTSC_results, "Trait: Total Seed Count")
