@@ -7,6 +7,7 @@ library(lme4)
 library(ggplot2)
 library(dplyr)
 library(ggpubr)
+library(tidyr)
 
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
 
@@ -159,14 +160,48 @@ mod_comp_fit_loop <- function(explist, df, f1, f2){
   return(dfr)
 }
 
+#HEATWAVES BE FAKIN ME OUT ----
+make_r2_heatmap <- function(df, main='Title'){
+  #number with significant pvals from anova
+  edge_exps <- df$exp[(df$apval < .05)]
+  no_edge_exps <- df$exp[(df$apval >= .05)]
+  nume <- length(edge_exps)
+  numnoe <- length(no_edge_exps)
+  #number where adj r2 is higher for edge model
+  nume2 <- sum(df$m2ar2 > df$m1ar2)
+  numnoe2 <- sum(df$m2ar2 <= df$m1ar2)
+  #SUMMARY DATA
+  r <- paste('ANOVA: ', nume, 'are better with edge effects, ',
+             numnoe, ' are not.')
+  r2 <- paste('Adj r-squared: ', nume2, 'are better with edge effects, ',
+              numnoe2, ' are not.')
+  #convert to long for heatmap I guess
+  df_m <- df %>% pivot_longer(cols= c('m1ar2', 'm2ar2'),
+                              names_to='model',
+                              values_to='adj_r_squared')
+  #CREATE PLOT
+  ggplot(df_m, aes(model, exp, fill=adj_r_squared)) +
+    geom_tile() +
+    scale_fill_gradient(low="white", high="slateblue4") +
+    labs(title = r2, subtitle = r)
+}
+
+
+#make dfs for model comps
 df_comp_tsc_edge <- mod_comp_fit_loop(setlist, data, f.tsc, f.tsc.e)
+df_comp_ln_edge <- mod_comp_fit_loop(setlist, data, f.ln, f.ln.e)
+df_comp_dtb_edge <- mod_comp_fit_loop(setlist, data, f.dtb, f.dtb.e)
+df_comp_spf_edge <- mod_comp_fit_loop(setlist, data, f.spf, f.spf.e)
+
+#~~~~~~~~~~~HEAT WAVES~~~~~~~~~~~~~
+make_r2_heatmap(df_comp_tsc_edge)
+make_r2_heatmap(df_comp_ln_edge)
+make_r2_heatmap(df_comp_dtb_edge)
+make_r2_heatmap(df_comp_spf_edge)
 
 
 
 
-
-
-## I think I'm just going to make an adjusted r2 heatmap for model comparison
 
 #Function to return adjusted r-squared valued from list of formulas ----
 mod_comp_ar2 <- function(exp, df, formulalist){
@@ -185,6 +220,8 @@ mod_comp_ar2 <- function(exp, df, formulalist){
   }
   return(v)
 } 
+
+
 #mod_comp_ar2(1,data,tsc_formulas) works
 m <- matrix(nrow = 4)
 for(item in sets_with_flats){
