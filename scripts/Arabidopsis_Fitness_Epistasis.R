@@ -111,10 +111,10 @@ make_r2_heatmap <- function(df, main='Title'){
   nume2 <- sum(df$m2ar2 > df$m1ar2)
   numnoe2 <- sum(df$m2ar2 <= df$m1ar2)
   #SUMMARY DATA
-  r <- paste('ANOVA: ', nume, 'are better with edge effects, ',
-             numnoe, ' are not.')
-  r2 <- paste('Adj r-squared: ', nume2, 'are better with edge effects, ',
-              numnoe2, ' are not.')
+  r <- paste('ANOVA: m2 wins ', nume, 
+             ', m1 wins ', numnoe)
+  r2 <- paste('Adj r^2: m2 wins', nume2,
+              ', m1 wins ', numnoe2)
   #convert to long for heatmap I guess
   df_m <- df %>% pivot_longer(cols= c('m1ar2', 'm2ar2'),
                               names_to='model',
@@ -135,10 +135,12 @@ df_comp_spf_edge <- mod_comp_fit_loop(setlist, data, f.spf, f.spf.e)
 
 #Generates model comp heat maps and results
 #for edge effects with different y variables
-make_r2_heatmap(df_comp_tsc_edge)
-make_r2_heatmap(df_comp_ln_edge)
-make_r2_heatmap(df_comp_dtb_edge)
-make_r2_heatmap(df_comp_spf_edge)
+p9 <- make_r2_heatmap(df_comp_tsc_edge)
+p10 <- make_r2_heatmap(df_comp_ln_edge)
+p11 <- make_r2_heatmap(df_comp_dtb_edge)
+p12 <- make_r2_heatmap(df_comp_spf_edge)
+
+grid.arrange(p9, p10, p11, p12, nrow=1)
 #conclusion: inconclusive
 
 ####Flat vs. No Flat ----
@@ -288,30 +290,6 @@ get_epistasis_for_formula <- function(plantsets, formula, df=data) {
 #test
 test_results <- get_epistasis_for_formula(as.character(sets_with_flats), f.dtb.f)
 
-#TSC results not edgy
-e_tsc_f <- get_epistasis_for_formula(sets_with_flats, f.dtb.f)
-e_tsc_a <- get_epistasis_for_formula(setlist, f.dtb)
-##Ugh it's trying to get data for sets that don't exist. It assumes there's numbers in between. 
-for(i in sets_with_flats){
-  print(i)
-}
-
-#TSC results edgy
-
-#DTB results not edgy
-
-#DTB results edgy
-
-#LN results not edgy
-
-#LN results edgy
-
-#SPF results edgy
-
-#SPF results not edgy
-
-## Multiplots ~~~~
-
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
 plot_epi_forest <- function(epi_data, main="Title") {
@@ -335,6 +313,52 @@ plot_epi_forest <- function(epi_data, main="Title") {
           axis.title.x = element_text(size = 12, colour = "black"))
   plot
 }
+
+
+
+
+#### Results! ----
+#TSC results not edgy
+e_tsc_f <- get_epistasis_for_formula(sets_with_flats, f.dtb.f)
+e_tsc_a <- get_epistasis_for_formula(sets_without_flats, f.dtb)
+e_tsc <- rbind(e_tsc_f, e_tsc_a)
+e_tsc <- arrange(e_tsc, e_est)
+e_tsc['row'] <- (1:(dim(e_tsc)[1]))
+efp_tsc <- plot_epi_forest(e_tsc, main = "Epistasis | Total Seed Count | No Edge Effects")
+efp_tsc
+
+#TSC results edgy
+forest_plot_delux <- function(f1_flats,f2_notflats, main="Title"){
+  df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
+  df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
+  df2 <- rbind(df_f, df_wof)
+  df2 <- arrange(df2, e_est)
+  df2['row'] <- (1:(dim(df2)[1]))
+  fplot <- plot_epi_forest(df2, main = main)           
+  return(fplot)
+}
+
+efp_tsc_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Total Seed Count | With Edge Effects")
+
+#DTB results not edgy
+efp_dtb <- forest_plot_delux(f.dtb.f, f.dtb, "Epistasis | Days To Bolt | No Edge Effects")
+
+#DTB results edgy
+efp_dtb_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Days To Bolt |With Edge Effects")
+
+#LN results not edgy
+efp_ln <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Effects")
+
+#LN results edgy
+efp_ln_e <- forest_plot_delux(f.ln.ef, f.ln.e, "Epistasis | Leaf Number | With Edge Effects")
+
+#SPF results edgy
+efp_spf <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Effects")
+
+#SPF results not edgy
+efp_spf_e
+
+## Multiplots ~~~~
 
 
 
