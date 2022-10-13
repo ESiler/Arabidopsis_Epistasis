@@ -318,16 +318,8 @@ plot_epi_forest <- function(epi_data, main="Title") {
 
 
 #### Results! ----
-#TSC results not edgy
-e_tsc_f <- get_epistasis_for_formula(sets_with_flats, f.dtb.f)
-e_tsc_a <- get_epistasis_for_formula(sets_without_flats, f.dtb)
-e_tsc <- rbind(e_tsc_f, e_tsc_a)
-e_tsc <- arrange(e_tsc, e_est)
-e_tsc['row'] <- (1:(dim(e_tsc)[1]))
-efp_tsc <- plot_epi_forest(e_tsc, main = "Epistasis | Total Seed Count | No Edge Effects")
-efp_tsc
 
-#TSC results edgy
+#Results Plotting Function DELUX EDITION!!!
 forest_plot_delux <- function(f1_flats,f2_notflats, main="Title"){
   df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
   df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
@@ -338,13 +330,17 @@ forest_plot_delux <- function(f1_flats,f2_notflats, main="Title"){
   return(fplot)
 }
 
-efp_tsc_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Total Seed Count | With Edge Effects")
+#TSC results not edgy
+efp_tsc <- forest_plot_delux(f.tsc.f, f.tsc, "Epistasis | Total Seed Count | No Edge Effects")
+
+#TSC results edgy
+efp_tsc_e <- forest_plot_delux(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects")
 
 #DTB results not edgy
 efp_dtb <- forest_plot_delux(f.dtb.f, f.dtb, "Epistasis | Days To Bolt | No Edge Effects")
 
 #DTB results edgy
-efp_dtb_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Days To Bolt |With Edge Effects")
+efp_dtb_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Days To Bolt | With Edge Effects")
 
 #LN results not edgy
 efp_ln <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Effects")
@@ -352,38 +348,20 @@ efp_ln <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Eff
 #LN results edgy
 efp_ln_e <- forest_plot_delux(f.ln.ef, f.ln.e, "Epistasis | Leaf Number | With Edge Effects")
 
-#SPF results edgy
-efp_spf <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Effects")
-
 #SPF results not edgy
-efp_spf_e
+efp_spf <- forest_plot_delux(f.spf.f, f.spf, "Epistasis | Seeds Per Fruit | No Edge Effects")
 
-## Multiplots ~~~~
+#SPF results edgy
+efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit | No Edge Effects")
+
+## Multiplots THE BIG PIG!~~~~
+
+ggarrange(efp_tsc, efp_tsc_e, nrow=1, legend='right',common.legend = TRUE)
+ggarrange(efp_dtb, efp_dtb_e, nrow=1, legend='right',common.legend = TRUE)
+ggarrange(efp_ln, efp_ln_e, nrow=1, legend='right',common.legend = TRUE)
+ggarrange(efp_spf, efp_spf_e, nrow=1, legend='right',common.legend = TRUE)
 
 
-
-#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-##### ALL BELOW THIS LINE ARE DEFUNCT
-## They will be broken til I fix the other function
-
-df_logTSC_results <- get_epistasis_fortrait(setlist, data$logTSC)
-plot1 <- plot_epi_forest(df_logTSC_results, "Trait: Total Seed Count")
-plot1
-
-#Days to Bolt epistasis results no covariates
-df_DTB_results <- get_epistasis_fortrait(setlist, log10(data$DTB))
-plot2 <- plot_epi_forest(df_DTB_results, "Trait: Days to Bolt")
-plot2
-
-#leaf number epistasis results no covariates
-df_LN_results <- get_epistasis_fortrait(setlist, log10(data$LN))
-plot3 <- plot_epi_forest(df_LN_results, "Trait: Leaf Number")
-plot3
-
-#Seed per Fruit epistasis results no covariates
-df_SPF_results <- get_epistasis_fortrait(setlist, log10(data$SPF))
-plot4 <- plot_epi_forest(df_SPF_results, "Trait: Seeds per Fruit")
-plot4
 
 
 
