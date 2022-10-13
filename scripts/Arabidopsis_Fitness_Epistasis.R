@@ -11,7 +11,7 @@ library(tidyr)
 library(gridExtra)
 
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
-
+genenamekey = read.delim("data/genes_in_each_set.txt", sep = "\t", header = T)
 ## Format data for analysis ----
 
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
@@ -35,10 +35,15 @@ data <- subset(data, is.finite(data$logTSC)) #remove nans
 levels(data$Set)[10] <- 2222
 
 #the setlist is the list of plant sets I'm looking at. 
-#Should review this -- supposedly some are duplicate genes. 
+#Should review this -- supposedly contain duplicate genes. 
 setlist <- as.character(sort(as.integer(levels(data$Set))))
 sets_with_flats <- as.character(sort(as.integer(as.character(unique(data$Set[data$Flat == '2'])))))
 sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
+
+#Add gene pair names to data
+genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
+data['Genes'] <- genenamekey$gene.pair[data$Set]
+
 
 ### Conjunction junction, what's your function?
 # Define Functions ----
@@ -278,11 +283,12 @@ get_epistasis_for_formula <- function(plantsets, formula, df=data) {
     resultlist[[i]] <- as.numeric(v)
   }
   df_result <- as.data.frame(t(as.data.frame(resultlist, 
-                                             row.names = c('Set', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e'),
+                                             row.names = c('Set', 'e_est',
+                                                           'lowerCI', 'upperCI', 
+                                                           'rsquared', 'pval_e'),
                                              byrow=FALSE)))
   df_results <- arrange(df_result, e_est)
   df_results$row <- c(1:1:dim(df_results)[1])
-  
   df_results <- df_results %>% mutate(Epistasis_Direction = case_when(lowerCI < 0 & upperCI < 0  ~ 'Negative',
                                                                       lowerCI > 0 & upperCI > 0 ~ 'Positive',
                                                                       lowerCI <=  0 & upperCI >= 0 ~ 'Not Detected'))
@@ -297,7 +303,11 @@ plot_epi_forest <- function(epi_data, main="Title") {
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
     geom_vline(xintercept = 0, color = "black", cex = .5) +
-    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Set, trans = "reverse", expand = c(0,0.5)) +
+    scale_y_continuous(name = "Gene Pair", 
+                       breaks=1:dim(epi_data)[1], 
+                       labels = epi_data$Set, 
+                       trans = "reverse", 
+                       expand = c(0,0.5)) +
     ggtitle(main) +
     xlab("Epistasis Value [95% CI]") +
     scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
@@ -314,13 +324,13 @@ plot_epi_forest <- function(epi_data, main="Title") {
   plot
 }
 
-
+plot_epi_forest(test_results, main="whyyyyy")
 
 
 #### Results! ----
 
 #Results Plotting Function DELUX EDITION!!!
-forest_plot_delux <- function(f1_flats,f2_notflats, main="Title"){
+forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
   df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
   df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
   df2 <- rbind(df_f, df_wof)
@@ -352,7 +362,7 @@ efp_ln_e <- forest_plot_delux(f.ln.ef, f.ln.e, "Epistasis | Leaf Number | With E
 efp_spf <- forest_plot_delux(f.spf.f, f.spf, "Epistasis | Seeds Per Fruit | No Edge Effects")
 
 #SPF results edgy
-efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit | No Edge Effects")
+efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit | With Edge Effects")
 
 ## Multiplots THE BIG PIG!~~~~
 
@@ -361,7 +371,38 @@ ggarrange(efp_dtb, efp_dtb_e, nrow=1, legend='right',common.legend = TRUE)
 ggarrange(efp_ln, efp_ln_e, nrow=1, legend='right',common.legend = TRUE)
 ggarrange(efp_spf, efp_spf_e, nrow=1, legend='right',common.legend = TRUE)
 
+##Comp plot for different Ys ----
+
+ggarrange(efp_tsc_e, efp_dtb_e, efp_ln_e, efp_spf_e,nrow=1,legend='right',common.legend=T)
+#Goal: Multiplot w common Y axis showing all 4 epi estimates.
+
+#Step 1: Get Y scale from efp_tcs_e
+#hack to extract y axis order
+forest_plot_delux_axishack <- function(f1_flats, f2_notflats, main="Title"){
+  df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
+  df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
+  df2 <- rbind(df_f, df_wof)
+  df2 <- arrange(df2, e_est)
+  df2['row'] <- (1:(dim(df2)[1]))
+  return(df2$Set)
+}
+common_y_axis <- (forest_plot_delux_axishack(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects"))
+
+common_y_axisf <- as.factor(common_y_axis)
+#only changes lables, doesn't change y order
+#Does not work
 
 
+efp_dtb_eo <- efp_dtb_e + scale_y_continuous(name="help!",
+                                             breaks=1:length(common_y_axis),
+                                             limits = common_y_axisf,
+                                             labels = common_y_axis,
+                                             )
 
+ggarrange(efp_dtb_e, efp_dtb_eo, efp_tsc_e, nrow=1)
 
+scale_y_continuous(name = "Gene Pair", 
+                   breaks=1:dim(epi_data)[1], 
+                   labels = epi_data$Set, 
+                   trans = "reverse", 
+                   expand = c(0,0.5)) +
