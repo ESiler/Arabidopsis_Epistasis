@@ -299,36 +299,35 @@ ggarrange(plotlogTSC, plotlogSN, plotlogSPF,
 # +Use same gene list for Y axis for easy comparison
 # +Use same scale for all epi vals on X axis
 #Pub quality plot
-y_order = (levels(unique(as.factor(rownames(f2_logTSC_epivals)))))
+y_order = factor(rownames(f2_logTSC_epivals), levels = rownames(f2_logTSC_epivals))
+y_order
 
 #New and improved plotting function
 plot_epi_forest2 <- function(epi_data, main="Title") {
-  epi_data$Genepair <- as.factor(epi_data$Genepair)
   plot <- ggplot(epi_data, aes(y = Genepair, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
     geom_vline(xintercept = 0, color = "black", cex = .5) +
-    scale_y_discrete(name = "Gene Pair") +
+    scale_y_discrete(name = "Gene Pair", limits=(rev(y_order))) +
     ggtitle(main) +
     xlab("Epistasis Value [95% CI]") +
     scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
     theme_bw() +
-    theme(panel.border = element_rect(colour = "black", fill=NA, size=1),
-          panel.background = element_blank(),
+    theme(panel.border = element_blank(),
+          panel.background = element_rect(),
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
           axis.line = element_line(colour = "black"),
           axis.text.y.left = element_text(size = 10, colour = "black"),
           axis.text.y = element_text(size = 12, colour = "black"),
           axis.text.x.bottom = element_text(size = 10, colour = "black"),
-          axis.title.x = element_text(size = 12, colour = "darkgrey"))
+          axis.title.x = element_text(size = 12, colour = "black"))
   plot <- plot + coord_cartesian(xlim = c(-.6, .6))
   return(plot)
 }
-
-
 plotlogTSCf2 <- plot_epi_forest2(f2_logTSC_epivals, main="Total Seed Count")
-#plotlogTSCf2
+plotlogTSCf2
+
 plotlogSNf2 <- plot_epi_forest2(f4_logSN_epivals, main="Silique Number")
 plotlogSPFf2 <- plot_epi_forest2(f6_logSPF_epivals, main="Seeds Per Fruit")
 
@@ -337,18 +336,23 @@ ggthemeb <- theme(axis.text.y = element_blank(),
                   axis.text.y.left = element_blank(),
                   axis.title.y=element_blank(), 
                   axis.ticks.y=element_blank(),
-                  axis.line.y=element_blank())
+                  axis.line.y=element_blank()
+                  )
+  
+plotlogTSCf2 + ggthemeb + theme(plot.margin = margin(r = -10, l = -10))
 
-Figure1 <- ggarrange(plotlogTSCf2, 
-                     (plotlogSNf2 + ggthemeb), 
-                     (plotlogSPFf2 + ggthemeb), 
+Figure1 <- ggarrange((plotlogTSCf2 + theme(plot.margin = unit(c(5.5, 5.5, 5.5, 0.5), "pt"))), 
+                     (plotlogSNf2 + ggthemeb + theme(plot.margin = unit(c(5.5, 0.5, 5.5, 0.5), "pt"))), 
+                     (plotlogSPFf2 + ggthemeb + theme(plot.margin = unit(c(5.5, 0.5, 5.5, 0.5), "pt"))), 
                      ncol=3,
                      common.legend=TRUE,
                      legend='right',
                      align='v')
-mapkfig1 <- annotate_figure(Figure1, 
-                            top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants", size=16))
 
+Figure1
+
+mapkfig1 <- annotate_figure(Figure1, 
+                            top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants\n ", size=16))
 mapkfig1
 
 
