@@ -313,7 +313,7 @@ plot_epi_forest2 <- function(epi_data, main="Title") {
     xlab("Epistasis Value [95% CI]") +
     scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
     theme_bw() +
-    theme(panel.border = element_blank(),
+    theme(panel.border = element_rect(colour = "black", fill=NA, size=1),
           panel.background = element_blank(),
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
@@ -321,23 +321,16 @@ plot_epi_forest2 <- function(epi_data, main="Title") {
           axis.text.y.left = element_text(size = 10, colour = "black"),
           axis.text.y = element_text(size = 12, colour = "black"),
           axis.text.x.bottom = element_text(size = 10, colour = "black"),
-          axis.title.x = element_text(size = 12, colour = "black"))
+          axis.title.x = element_text(size = 12, colour = "darkgrey"))
   plot <- plot + coord_cartesian(xlim = c(-.6, .6))
   return(plot)
 }
 
 
 plotlogTSCf2 <- plot_epi_forest2(f2_logTSC_epivals, main="Total Seed Count")
-plotlogTSCf2
-
+#plotlogTSCf2
 plotlogSNf2 <- plot_epi_forest2(f4_logSN_epivals, main="Silique Number")
 plotlogSPFf2 <- plot_epi_forest2(f6_logSPF_epivals, main="Seeds Per Fruit")
-
-Figure1 <- ggarrange(plotlogTSCf2 + rremove('ylab'), plotlogSNf2 + rremove('ylab'), plotlogSPFf2 + rremove('ylab'), 
-                    ncol=3,
-                    common.legend=TRUE,
-                    legend='right')
-
 
 
 ggthemeb <- theme(axis.text.y = element_blank(),
@@ -351,8 +344,10 @@ Figure1 <- ggarrange(plotlogTSCf2,
                      (plotlogSPFf2 + ggthemeb), 
                      ncol=3,
                      common.legend=TRUE,
-                     legend='right')
-mapkfig1 <- annotate_figure(Figure1, top = text_grob("Epistasis Values for Map Kinase Double Mutants", size=16))
+                     legend='right',
+                     align='v')
+mapkfig1 <- annotate_figure(Figure1, 
+                            top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants", size=16))
 
 mapkfig1
 
@@ -383,7 +378,7 @@ ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
           heatplotTSC, heatplotSN, heatplotSPF, 
           ncol=3, nrow=2,
           common.legend=TRUE,
-          legend='right')
+          legend='right',)
 
 gradientplots <- ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
                            ncol=3, nrow=1,
