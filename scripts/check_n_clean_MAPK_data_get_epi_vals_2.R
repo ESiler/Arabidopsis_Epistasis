@@ -326,8 +326,6 @@ plot_epi_forest2 <- function(epi_data, main="Title") {
   return(plot)
 }
 plotlogTSCf2 <- plot_epi_forest2(f2_logTSC_epivals, main="Total Seed Count")
-plotlogTSCf2
-
 plotlogSNf2 <- plot_epi_forest2(f4_logSN_epivals, main="Silique Number")
 plotlogSPFf2 <- plot_epi_forest2(f6_logSPF_epivals, main="Seeds Per Fruit")
 
@@ -338,8 +336,6 @@ ggthemeb <- theme(axis.text.y = element_blank(),
                   axis.ticks.y=element_blank(),
                   axis.line.y=element_blank()
                   )
-  
-plotlogTSCf2 + ggthemeb + theme(plot.margin = margin(r = -10, l = -10))
 
 Figure1 <- ggarrange((plotlogTSCf2 + theme(plot.margin = unit(c(5.5, 5.5, 5.5, 0.5), "pt"))), 
                      (plotlogSNf2 + ggthemeb + theme(plot.margin = unit(c(5.5, 0.5, 5.5, 0.5), "pt"))), 
@@ -347,24 +343,38 @@ Figure1 <- ggarrange((plotlogTSCf2 + theme(plot.margin = unit(c(5.5, 5.5, 5.5, 0
                      ncol=3,
                      common.legend=TRUE,
                      legend='right',
-                     align='v')
-
-Figure1
+                     widths=c(3.9,3,3))
 
 mapkfig1 <- annotate_figure(Figure1, 
-                            top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants\n ", size=16))
+                            top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants", size=16))
 mapkfig1
 
+# Supplemental Figure 1: ----
+plotlogTSC2 <- plot_epi_forest2(f1_logTSC_epivals, main="Total Seed Count")
+plotlogSN2 <- plot_epi_forest2(f3_logSN_epivals, main="Silique Number")
+plotlogSPF2 <- plot_epi_forest2(f5_logSPF_epivals, main="Seeds Per Fruit")
 
-### Make a cool heatmap showing epi value sof different mapk combos
+FigureS1 <- ggarrange((plotlogTSC2 + theme(plot.margin = unit(c(5.5, 5.5, 5.5, 0.5), "pt"))), 
+                     (plotlogSN2 + ggthemeb + theme(plot.margin = unit(c(5.5, 0.5, 5.5, 0.5), "pt"))), 
+                     (plotlogSPF2 + ggthemeb + theme(plot.margin = unit(c(5.5, 0.5, 5.5, 0.5), "pt"))), 
+                     ncol=3,
+                     common.legend=TRUE,
+                     legend='right',
+                     widths=c(3.9,3,3))
 
+mapkfigS1 <- annotate_figure(FigureS1, 
+                            top = text_grob("Fig S1: Epistasis Values for Map Kinase Double Mutants (not including flat effect)", size=16))
+mapkfigS1
+
+
+
+### Fig 2 and Fig S2: Heatmaps ----
 ##Format data:
 genelevels <- c("mpk1", "mpk3","mpk5", "mpk6", "mpk8", "mpk9", "mpk13", "mpk14", "mpk16", "mpk17", "mpk18", "mpk20")
 
 f2_logTSC_epivalsF <- format_data_for_heatmap(df=f2_logTSC_epivals, genes=genelevels)
 df_heatmap_SN <- format_data_for_heatmap(df=f4_logSN_epivals, genes=genelevels)
 df_heatmap_SPF <- format_data_for_heatmap(df=f5_logSPF_epivals, genes=genelevels)
-
 
 ## Generate plots
 #heat map positive/negative/nd | TSC
