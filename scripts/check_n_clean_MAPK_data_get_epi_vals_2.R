@@ -235,8 +235,38 @@ f4_logSN_epivals <- get_epistasis_all_mapk(double_mutants, f4, df=df_SN)
 f5_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f5, df=df_SPF)
 f6_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f6, df=df_SPF)
 
-
+all_epivals_f <- bind_rows("TCS" = f2_logTSC_epivals, 
+                           "SN" = f4_logSN_epivals, 
+                           "SPF" = f6_logSPF_epivals,
+                           .id="metric")
+all_epivals_f$Genepair <- as.factor(all_epivals_f$Genepair)
 ### make Cool Graphs For Epistasis:
+
+#Fig 1: Multiplot of Forest Plots ----
+#Old function
+plot_epi_forest <- function(epi_data, main="Title") {
+  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+    geom_point(shape = 18, size = 3) +  
+    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
+    geom_vline(xintercept = 0, color = "black", cex = .5) +
+    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Genepair, trans = "reverse", expand = c(0,0.5)) +
+    ggtitle(main) +
+    xlab("Epistasis Value [95% CI]") +
+    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.y.left = element_text(size = 10, colour = "black"),
+          axis.text.y = element_text(size = 12, colour = "black"),
+          axis.text.x.bottom = element_text(size = 10, colour = "black"),
+          axis.title.x = element_text(size = 12, colour = "black"))
+  plot
+}
+
+
 
 plotlogTSC <- plot_epi_forest(f1_logTSC_epivals, main="Epistasis Values\nTotal Seed Count\nw/out flat")
 plotlogTSCf <- plot_epi_forest(f2_logTSC_epivals, main="Epistasis Values\nTotal Seed Count\nwith flat")
@@ -248,7 +278,7 @@ plotlogSPF <- plot_epi_forest(f5_logSPF_epivals, main="Epistasis Values\nSeeds P
 plotlogSPFf <- plot_epi_forest(f6_logSPF_epivals, main="Epistasis Values\nSeeds Per Fruit\nwith flat")
 
 #Three plots
-threeepiplots <- ggarrange(plotlogTSCf, plotlogSNf, plotlogSPF, 
+threeepiplots <- ggarrange(plotlogTSCf, plotlogSNf, plotlogSPFf, 
           ncol=3,
           common.legend=TRUE,
           legend='right')
@@ -260,6 +290,72 @@ threeepiplots
 #Six plots
 ggarrange(plotlogTSC, plotlogSN, plotlogSPF, 
           plotlogTSCf, plotlogSNf, plotlogSPFf) #Woot woot!
+
+
+#Publication quality plot: 
+
+# X+include flat effects for all 
+# +Include/Add real gene names (NA for this one??)
+# +Use same gene list for Y axis for easy comparison
+# +Use same scale for all epi vals on X axis
+#Pub quality plot
+y_order = (levels(unique(as.factor(rownames(f2_logTSC_epivals)))))
+
+#New and improved plotting function
+plot_epi_forest2 <- function(epi_data, main="Title") {
+  epi_data$Genepair <- as.factor(epi_data$Genepair)
+  plot <- ggplot(epi_data, aes(y = Genepair, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+    geom_point(shape = 18, size = 3) +  
+    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
+    geom_vline(xintercept = 0, color = "black", cex = .5) +
+    scale_y_discrete(name = "Gene Pair") +
+    ggtitle(main) +
+    xlab("Epistasis Value [95% CI]") +
+    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+    theme_bw() +
+    theme(panel.border = element_blank(),
+          panel.background = element_blank(),
+          panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(), 
+          axis.line = element_line(colour = "black"),
+          axis.text.y.left = element_text(size = 10, colour = "black"),
+          axis.text.y = element_text(size = 12, colour = "black"),
+          axis.text.x.bottom = element_text(size = 10, colour = "black"),
+          axis.title.x = element_text(size = 12, colour = "black"))
+  plot <- plot + coord_cartesian(xlim = c(-.6, .6))
+  return(plot)
+}
+
+
+plotlogTSCf2 <- plot_epi_forest2(f2_logTSC_epivals, main="Total Seed Count")
+plotlogTSCf2
+
+plotlogSNf2 <- plot_epi_forest2(f4_logSN_epivals, main="Silique Number")
+plotlogSPFf2 <- plot_epi_forest2(f6_logSPF_epivals, main="Seeds Per Fruit")
+
+Figure1 <- ggarrange(plotlogTSCf2 + rremove('ylab'), plotlogSNf2 + rremove('ylab'), plotlogSPFf2 + rremove('ylab'), 
+                    ncol=3,
+                    common.legend=TRUE,
+                    legend='right')
+
+
+
+ggthemeb <- theme(axis.text.y = element_blank(),
+                  axis.text.y.left = element_blank(),
+                  axis.title.y=element_blank(), 
+                  axis.ticks.y=element_blank(),
+                  axis.line.y=element_blank())
+
+Figure1 <- ggarrange(plotlogTSCf2, 
+                     (plotlogSNf2 + ggthemeb), 
+                     (plotlogSPFf2 + ggthemeb), 
+                     ncol=3,
+                     common.legend=TRUE,
+                     legend='right')
+mapkfig1 <- annotate_figure(Figure1, top = text_grob("Epistasis Values for Map Kinase Double Mutants", size=16))
+
+mapkfig1
+
 
 ### Make a cool heatmap showing epi value sof different mapk combos
 
