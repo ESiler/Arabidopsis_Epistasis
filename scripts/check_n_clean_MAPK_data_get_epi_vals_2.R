@@ -7,7 +7,7 @@ source("~/Documents/Code/ElliesFavFunctions.R")
 library(igraph)
 library(ggraph)
 
-### Conjunction Junction, what's your function? ----
+#Functions----
 
 #This function turns WT to 0 and MUT to 1. 
 func_t1 <- function(x){
@@ -92,7 +92,7 @@ get_epistasis_all_mapk <- function(plantsets, formula, df=data) {
 }
 
 
-### Load + Process Data ----
+# Load + Process Data ----
 setwd("~/Documents/Projects/Arabidopsis_fitness_Melissa")
 df = read.delim("MAPK_DEPI_data_080522.txt", sep = "\t", header = T)
 dfOG <- df
@@ -122,7 +122,7 @@ df_SPF <- df %>% mutate(logSPF = log10(SPF))
 df_SPF <- subset(df_SPF, is.finite(df_SPF$logSPF))
 
 
-### Model generation and model comparison ----
+#Model generation and model comparison ----
 
 #List of double mutants (for looping)
 double_mutants <- levels(df$Genotype)[grep("_", levels(df$Genotype))]
@@ -442,5 +442,21 @@ plot_gene_network_epi(df_heatmap_TSC, main = "Epistasis in MapK Genes | Total Se
 plot_gene_network_epi(df_heatmap_SN, main = "Epistasis in MapK Genes | Silique Number")
 plot_gene_network_epi(df_heatmap_SPF, main = "Epistasis in MapK Genes | Seeds Per Fruit")
 
+#Add Legend!!!
+#Make ns lines easier to see – change background color or line color?
 
-#Fig 4 and Fig 4S: Barplot multiplot
+#Fig 4: Barplot multiplots a, b, and c. (+ s4?) ----
+str(df)
+
+ggplot(df, aes(x=mutnum, y=TSC)) + 
+  geom_col() +
+  facet_wrap(~Genotype)
+
+#Step 1: Make dataframe with appropriate formatting for this project,
+#or formula to extract appropriate data
+
+
+
+
+
+
