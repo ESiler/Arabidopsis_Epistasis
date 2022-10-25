@@ -405,4 +405,21 @@ scale_y_continuous(name = "Gene Pair",
                    breaks=1:dim(epi_data)[1], 
                    labels = epi_data$Set, 
                    trans = "reverse", 
-                   expand = c(0,0.5)) +
+                   expand = c(0,0.5)) 
+  
+  
+  
+  
+  
+#Fig 2: Multiplot of Fitness Values by Genotype ----
+
+ggplot(data, aes(x=Genotype, y=logTSC)) + 
+  geom_bar(position = "dodge",
+            stat = "summary",
+            fun = "mean") +
+  facet_wrap(~Set) +
+  scale_x_discrete(limits = c("WT", "MA", "MB", "DM")) +
+  theme_bw()
+
+  
+  
