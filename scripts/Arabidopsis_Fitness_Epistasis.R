@@ -413,13 +413,21 @@ scale_y_continuous(name = "Gene Pair",
   
 #Fig 2: Multiplot of Fitness Values by Genotype ----
 
-ggplot(data, aes(x=Genotype, y=logTSC)) + 
-  geom_bar(position = "dodge",
-            stat = "summary",
-            fun = "mean") +
-  facet_wrap(~Set) +
-  scale_x_discrete(limits = c("WT", "MA", "MB", "DM")) +
-  theme_bw()
-
+facetplotprelim <- function(Fitness_Value){
+  p <- ggplot(data, aes(x=Genotype, y=Fitness_Value)) + 
+    geom_bar(position = "dodge",
+              stat = "summary",
+              fun = "mean") +
+    facet_wrap(~Set) +
+    scale_x_discrete(limits = c("WT", "MA", "MB", "DM")) +
+    theme_bw()
   
+  return(p)
+  }
+
+facetplotprelim(data$TSC)
+facetplotprelim(data$logTSC)  
+facetplotprelim(data$DTB)
+facetplotprelim(data$LN)
+facetplotprelim(data$SPF)
   
