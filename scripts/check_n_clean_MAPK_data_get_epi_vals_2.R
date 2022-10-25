@@ -4,7 +4,8 @@ require(lme4)
 require(ggplot2)
 require(ggpubr)
 source("~/Documents/Code/ElliesFavFunctions.R")
-
+library(igraph)
+library(ggraph)
 
 ### Conjunction Junction, what's your function? ----
 
@@ -90,29 +91,6 @@ get_epistasis_all_mapk <- function(plantsets, formula, df=data) {
   return(df_results)
 }
 
-#This function makes a rad forest plot from a dataframe of epistasis values
-plot_epi_forest <- function(epi_data, main="Title") {
-  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
-    geom_point(shape = 18, size = 3) +  
-    geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
-    geom_vline(xintercept = 0, color = "black", cex = .5) +
-    scale_y_continuous(name = "Gene Pair", breaks=1:dim(epi_data)[1], labels = epi_data$Genepair, trans = "reverse", expand = c(0,0.5)) +
-    ggtitle(main) +
-    xlab("Epistasis Value [95% CI]") +
-    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
-    theme_bw() +
-    theme(panel.border = element_blank(),
-          panel.background = element_blank(),
-          panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(), 
-          axis.line = element_line(colour = "black"),
-          axis.text.y.left = element_text(size = 10, colour = "black"),
-          axis.text.y = element_text(size = 12, colour = "black"),
-          axis.text.x.bottom = element_text(size = 10, colour = "black"),
-          axis.title.x = element_text(size = 12, colour = "black"))
-  plot
-}
-
 
 ### Load + Process Data ----
 setwd("~/Documents/Projects/Arabidopsis_fitness_Melissa")
@@ -192,15 +170,16 @@ f4_logSN_epivals <- get_epistasis_all_mapk(double_mutants, f4, df=df_SN)
 f5_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f5, df=df_SPF)
 f6_logSPF_epivals <- get_epistasis_all_mapk(double_mutants, f6, df=df_SPF)
 
+#odd functions are w/out flat; even functions are with
 all_epivals_f <- bind_rows("TCS" = f2_logTSC_epivals, 
                            "SN" = f4_logSN_epivals, 
                            "SPF" = f6_logSPF_epivals,
                            .id="metric")
 all_epivals_f$Genepair <- as.factor(all_epivals_f$Genepair)
-### make Cool Graphs For Epistasis:
+#Make Figures ----
 
 #Fig 1: Multiplot of Forest Plots ----
-#Old function
+#OG forest plot funtion; best for single plots. See plot_epi_forest2
 plot_epi_forest <- function(epi_data, main="Title") {
   plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
@@ -259,7 +238,7 @@ ggarrange(plotlogTSC, plotlogSN, plotlogSPF,
 y_order = factor(rownames(f2_logTSC_epivals), levels = rownames(f2_logTSC_epivals))
 y_order
 
-#New and improved plotting function
+#New and improved plotting function Best for multi-plots
 plot_epi_forest2 <- function(epi_data, main="Title") {
   plot <- ggplot(epi_data, aes(y = Genepair, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
@@ -320,7 +299,7 @@ FigureS1 <- ggarrange((plotlogTSC2 + theme(plot.margin = unit(c(5.5, 5.5, 5.5, 0
                      widths=c(3.9,3,3))
 
 mapkfigS1 <- annotate_figure(FigureS1, 
-                            top = text_grob("Fig S1: Epistasis Values for Map Kinase Double Mutants (not including flat effect)", size=16))
+                            top = text_grob("Fig S1: Epistasis Values for Map Kinase Double Mutants (excluding flat effect)", size=16))
 mapkfigS1
 
 
@@ -368,19 +347,19 @@ mapepiheatg <- function(df, main="Title"){
           axis.line = element_line(colour = "black"),
           axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
 }
-heatplotTSCg <- mapepiheatg(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
+heatplotTSCg <- mapepiheatg(f2_logTSC_epivals, main="Epistasis: Total Seed Count")
 
 ##Format data:
 genelevels <- c("mpk1", "mpk3","mpk5", "mpk6", "mpk8", "mpk9", "mpk13", "mpk14", "mpk16", "mpk17", "mpk18", "mpk20")
 
-f2_logTSC_epivalsF <- format_data_for_heatmap(df=f2_logTSC_epivals, genes=genelevels)
+df_heatmap_TSC <- format_data_for_heatmap(df=f2_logTSC_epivals, genes=genelevels)
 df_heatmap_SN <- format_data_for_heatmap(df=f4_logSN_epivals, genes=genelevels)
-df_heatmap_SPF <- format_data_for_heatmap(df=f5_logSPF_epivals, genes=genelevels)
+df_heatmap_SPF <- format_data_for_heatmap(df=f6_logSPF_epivals, genes=genelevels)
 
 ## Generate plots
 #heat map positive/negative/nd | TSC
-heatplotTSC <- mapepiheat(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
-heatplotTSCg <- mapepiheatg(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
+heatplotTSC <- mapepiheat(df_heatmap_TSC, main="Epistasis: Total Seed Count")
+heatplotTSCg <- mapepiheatg(df_heatmap_TSC, main="Epistasis: Total Seed Count")
 ##heat maps positive/negative/nd | SN
 heatplotSN <- mapepiheat(df_heatmap_SN, main="Epistasis: Silique Number")
 heatplotSNg <- mapepiheatg(df_heatmap_SN, main="Epistasis: Silique Number")
@@ -407,5 +386,61 @@ sigplots <- ggarrange(heatplotTSC, heatplotSN, heatplotSPF,
 
 ggarrange(gradientplots, sigplots, ncol=1, nrow=2, common.legend = TRUE)
 
+#Add labels (gradient vs non-gradient) or combine info. 
+#Black box for sig? Red/Blue box for sig? Would I need a beige box for ns then??
+#Add legend
+
+
+
 #Fig 3 and Fig 3S: Network Diagrams----
+
+#each mapk is a node -- check
+#gene interactions are edges -- check
+#Line width also coded by abs val of epi estimate -- check
+#p <05 solid line, p > .05 dotted line -- check
+#epi estimate is hue -- magenta-beige-blue (diverging color scheme) -- check
+
+nodes_mapk <- matrix(genelevels)
+
+##Function to make plots :)
+plot_gene_network_epi <- function(datadf, main='Graph Title', nodes=nodes_mapk){
+  #Create edged dataframe
+  edges_mapk_TSC <-datadf[1:((dim(datadf)/2)[1]),
+                          c('GeneA', 'GeneB', 'e_est', 'Epistasis_Direction', 'pval_e')]
+  #Create graph object
+  mapk_graph_data <- graph_from_data_frame(edges_mapk_TSC, directed = FALSE, vertices = nodes)
+  #Edge width corresponds to absolute value of epistasis
+  edge_widths <- abs(edges_mapk_TSC$e_est)*50 + 1
+  #Add line type to df, with solid for statistically significant and dotted for ns
+  edges_mapk_TSC <- mutate(edges_mapk_TSC, lty = case_when(
+    pval_e < .05 ~ 1,
+    pval_e >= .05 ~ 3
+  ))
+  edge_lty <- edges_mapk_TSC$lty
+  #epistasis estimates:
+  edge_e_vals <- edges_mapk_TSC$e_est
+  #Epistasis direction...p sure this is not used
+  edge_result <- factor(edges_mapk_TSC$Epistasis_Direction)
+  
+  #And now the Big Pig: Color by number
+  #Maybe I should move this
+  epi_colors <- colorRampPalette(c('#D9027D', 'grey', 'blue'))
+  my_colors <- epi_colors(100)
+  values <- seq(-.3, .3, length.out=100)
+  color_df <- data.frame(values, my_colors)
+  colors_eTSC<-my_colors[findInterval(edge_e_vals, values)]
+  
+  #Generate plot, yay!
+  plot(mapk_graph_data, vertex.color='lightgrey', vertex.frame.color='lightgrey', vertex.size=25, 
+       edge.width=edge_widths, edge.lty=edge_lty, edge.color = colors_eTSC,
+       layout=layout_in_circle, 
+       main=main)
+}
+
+#Generate Plots Network :) ---=-
+plot_gene_network_epi(df_heatmap_TSC, main = "Epistasis in MapK Genes | Total Seed Count")
+plot_gene_network_epi(df_heatmap_SN, main = "Epistasis in MapK Genes | Silique Number")
+plot_gene_network_epi(df_heatmap_SPF, main = "Epistasis in MapK Genes | Seeds Per Fruit")
+
+
 #Fig 4 and Fig 4S: Barplot multiplot
