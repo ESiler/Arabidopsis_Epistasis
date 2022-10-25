@@ -113,49 +113,6 @@ plot_epi_forest <- function(epi_data, main="Title") {
   plot
 }
 
-## Function that converts epistasis dataframes into heatmap form:
-format_data_for_heatmap <- function(df, genes){
-  df['GeneA'] <- gsub("_\\d*", '', df$Genepair)
-  df['GeneB'] <- gsub("\\d*_", '', df$Genepair)
-  df['GeneA'] <- factor(df$GeneA, levels = genes)
-  df['GeneB'] <- factor(df$GeneB, levels = genes)
-  dff <- df
-  dff['GeneA'] <- df['GeneB']
-  dff['GeneB'] <- df['GeneA']
-  resultdf <- rbind(df, dff)
-  return(resultdf)
-}
-
-##Functions to make heat map:
-mapepiheat <- function(df, main="Title"){
-  ggplot(df, aes(x = GeneA, y = GeneB, fill = Epistasis_Direction)) +
-    geom_tile() +
-    coord_fixed() + 
-    ggtitle(main) +
-    scale_fill_manual(values = c("Negative" = "#D9027D", "Not Detected" = "#FFFFCC", "Positive" = "blue")) +
-    theme(panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          panel.background = element_blank(), 
-          axis.line = element_line(colour = "black"),
-          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
-}
-
-# This function does a gradient (which seems sketchy on ns data but idk. Should combine these two somehow)
-mapepiheatg <- function(df, main="Title"){
-  ggplot(df, aes(x = GeneA, y = GeneB, fill = e_est)) +
-    geom_tile() +
-    scale_fill_gradient2(low = "#D9027D", mid = "#FFFFCC", high = "blue") +
-    coord_fixed() +
-    ggtitle(main) +
-    theme(panel.grid.major = element_blank(), 
-          panel.grid.minor = element_blank(),
-          plot.title = element_text(hjust = 0.5),
-          panel.background = element_blank(), 
-          axis.line = element_line(colour = "black"),
-          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
-}
-
 
 ### Load + Process Data ----
 setwd("~/Documents/Projects/Arabidopsis_fitness_Melissa")
@@ -349,7 +306,7 @@ mapkfig1 <- annotate_figure(Figure1,
                             top = text_grob("Fig 1: Epistasis Values for Map Kinase Double Mutants", size=16))
 mapkfig1
 
-# Supplemental Figure 1: ----
+#Fig S1: ----
 plotlogTSC2 <- plot_epi_forest2(f1_logTSC_epivals, main="Total Seed Count")
 plotlogSN2 <- plot_epi_forest2(f3_logSN_epivals, main="Silique Number")
 plotlogSPF2 <- plot_epi_forest2(f5_logSPF_epivals, main="Seeds Per Fruit")
@@ -368,7 +325,51 @@ mapkfigS1
 
 
 
-### Fig 2 and Fig S2: Heatmaps ----
+#Fig 2 and Fig S2: Heatmaps ----
+
+## Function that converts epistasis dataframes into heatmap form:
+format_data_for_heatmap <- function(df, genes){
+  df['GeneA'] <- gsub("_\\d*", '', df$Genepair)
+  df['GeneB'] <- gsub("\\d*_", '', df$Genepair)
+  df['GeneA'] <- factor(df$GeneA, levels = genes)
+  df['GeneB'] <- factor(df$GeneB, levels = genes)
+  dff <- df
+  dff['GeneA'] <- df['GeneB']
+  dff['GeneB'] <- df['GeneA']
+  resultdf <- rbind(df, dff)
+  return(resultdf)
+}
+##Functions to make heat map:
+mapepiheat <- function(df, main="Title"){
+  ggplot(df, aes(x = GeneA, y = GeneB, fill = Epistasis_Direction)) +
+    geom_tile() +
+    coord_fixed() + 
+    ggtitle(main) +
+    scale_fill_manual(values = c("Negative" = "#D9027D", "Not Detected" = "#FFFFCC", "Positive" = "blue")) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          panel.background = element_rect(fill='grey'), 
+          axis.line = element_line(colour = "black"),
+          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+}
+
+# This function does a gradient (which seems sketchy on ns data but idk. Should combine these two somehow)
+mapepiheatg <- function(df, main="Title"){
+  ggplot(df, aes(x = GeneA, y = GeneB, fill = e_est)) +
+    geom_tile() +
+    scale_fill_gradient2(low = "#D9027D", mid = "#FFFFCC", high = "blue", na.value='purple') +
+    coord_fixed() +
+    ggtitle(main) +
+    theme(panel.grid.major = element_blank(), 
+          panel.grid.minor = element_blank(),
+          plot.title = element_text(hjust = 0.5),
+          panel.background = element_rect(fill='grey'),
+          axis.line = element_line(colour = "black"),
+          axis.text.x = element_text(angle = 45, vjust=1, hjust=1))
+}
+heatplotTSCg <- mapepiheatg(f2_logTSC_epivalsF, main="Epistasis: Total Seed Count")
+
 ##Format data:
 genelevels <- c("mpk1", "mpk3","mpk5", "mpk6", "mpk8", "mpk9", "mpk13", "mpk14", "mpk16", "mpk17", "mpk18", "mpk20")
 
@@ -392,7 +393,7 @@ ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
           heatplotTSC, heatplotSN, heatplotSPF, 
           ncol=3, nrow=2,
           common.legend=TRUE,
-          legend='right',)
+          legend='right')
 
 gradientplots <- ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
                            ncol=3, nrow=1,
@@ -402,7 +403,9 @@ gradientplots <- ggarrange(heatplotTSCg, heatplotSNg, heatplotSPFg,
 sigplots <- ggarrange(heatplotTSC, heatplotSN, heatplotSPF, 
                       ncol=3, nrow=1,
                       common.legend=TRUE,
-                      legend='bottom')
+                      legend='none')
 
-ggarrange(gradientplots, sigplots, ncol=1, nrow=2)
+ggarrange(gradientplots, sigplots, ncol=1, nrow=2, common.legend = TRUE)
 
+#Fig 3 and Fig 3S: Network Diagrams----
+#Fig 4 and Fig 4S: Barplot multiplot
