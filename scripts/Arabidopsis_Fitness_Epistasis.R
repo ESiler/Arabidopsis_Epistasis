@@ -12,8 +12,7 @@ library(gridExtra)
 
 ## Load data ----
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
-genenamekey = read.delim("data/genes_in_each_set.txt", sep = "\t", header = T)
-gene_names_from_huan = read.delim("data/Arabidopsis_locus-namelist.txt", sep = "|", header=T)
+
 
 ## Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
@@ -44,6 +43,8 @@ sets_with_flats <- as.character(sort(as.integer(as.character(unique(data$Set[dat
 sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 
 #Get and format common names for gene loci in Huan's list
+gene_names_from_huan = read.delim("data/Arabidopsis_locus-namelist.txt", sep = "|", header=T)
+
 gene_names_from_huan$gene1 <- gsub(",.*$", "", 
                                    gene_names_from_huan$CommonName)
 
@@ -53,11 +54,23 @@ for (i in 1:(nrow(gene_names_from_huan))){
   }
 }
 
-head(gene_names_from_huan)
+#genenamekey: load data and change loci to uppercase
+genenamekey = read.delim("data/genes_in_each_set.txt", sep = "\t", header = T)
 
-#YOU ARE HERE^ ----
-genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
-data['Genes'] <- genenamekey$gene.pair[data$Set]
+genenamekey$MA <- toupper(genenamekey$MA)
+genenamekey$MB <- toupper(genenamekey$MB)
+
+#merge common names into genenamekey
+genenamekey['ma'] <- left_join(genenamekey, gene_names_from_huan, by=c('MA' = 'locus'))$gene1
+genenamekey['mb'] <- left_join(genenamekey, gene_names_from_huan, by=c('MB' = 'locus'))$gene1
+
+#create gene pair name...but somehow merge things like bam2/1 and vtc5/2?
+
+
+
+
+#genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
+#data['Genes'] <- genenamekey$gene.pair[data$Set]
 
 # Define Functions ----
 
