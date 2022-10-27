@@ -10,10 +10,12 @@ library(ggpubr)
 library(tidyr)
 library(gridExtra)
 
+## Load data ----
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
 genenamekey = read.delim("data/genes_in_each_set.txt", sep = "\t", header = T)
-## Format data for analysis ----
+gene_names_from_huan = read.delim("data/Arabidopsis_locus-namelist.txt", sep = "|", header=T)
 
+## Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
 factor_cols <- c('Set', 'Flat', 'Row', 'Type', 'Genotype', 'MA', 'MB', 'Subline')
 
@@ -32,7 +34,8 @@ data$logTSC <- log10(data$TSC)
 data <- subset(data, is.finite(data$logTSC)) #remove nans
 
 #In Sets, change 2r to 2222 (it is a repeat of exp 2)
-levels(data$Set)[10] <- 2222
+level_2r <- which(levels(data$Set) == '2r')
+levels(data$Set)[level_2r] <- 2222
 
 #the setlist is the list of plant sets I'm looking at. 
 #Should review this -- supposedly contain duplicate genes. 
@@ -40,12 +43,22 @@ setlist <- as.character(sort(as.integer(levels(data$Set))))
 sets_with_flats <- as.character(sort(as.integer(as.character(unique(data$Set[data$Flat == '2'])))))
 sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 
-#Add gene pair names to data
+#Get and format common names for gene loci in Huan's list
+gene_names_from_huan$gene1 <- gsub(",.*$", "", 
+                                   gene_names_from_huan$CommonName)
+
+for (i in 1:(nrow(gene_names_from_huan))){
+  if (gene_names_from_huan$locus[i] != gene_names_from_huan$CommonName[i]) {
+    gene_names_from_huan$gene1[i] <- tolower(gene_names_from_huan$gene1[i])
+  }
+}
+
+head(gene_names_from_huan)
+
+#YOU ARE HERE^ ----
 genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
 data['Genes'] <- genenamekey$gene.pair[data$Set]
 
-
-### Conjunction junction, what's your function?
 # Define Functions ----
 
 ### Models and model comparison -----
