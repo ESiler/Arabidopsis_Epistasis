@@ -2,7 +2,7 @@
 # on duplicated homologous genes. 
 # By E Siler
 
-## Load libraries and data ----
+## 1. Load libraries ----
 library(lme4)
 library(ggplot2)
 library(dplyr)
@@ -10,11 +10,11 @@ library(ggpubr)
 library(tidyr)
 library(gridExtra)
 
-## Load data ----
+## 2. Load data ----
 data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
 
 
-## Format data for analysis ----
+## 3. Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
 factor_cols <- c('Set', 'Flat', 'Row', 'Type', 'Genotype', 'MA', 'MB', 'Subline')
 
@@ -42,40 +42,31 @@ setlist <- as.character(sort(as.integer(levels(data$Set))))
 sets_with_flats <- as.character(sort(as.integer(as.character(unique(data$Set[data$Flat == '2'])))))
 sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 
-#Get and format common names for gene loci in Huan's list
-gene_names_from_huan = read.delim("data/Arabidopsis_locus-namelist.txt", sep = "|", header=T)
 
-gene_names_from_huan$gene1 <- gsub(",.*$", "", 
-                                   gene_names_from_huan$CommonName)
-
-for (i in 1:(nrow(gene_names_from_huan))){
-  if (gene_names_from_huan$locus[i] != gene_names_from_huan$CommonName[i]) {
-    gene_names_from_huan$gene1[i] <- tolower(gene_names_from_huan$gene1[i])
-  }
-}
-
-#genenamekey: load data and change loci to uppercase
-genenamekey = read.delim("data/genes_in_each_set.txt", sep = "\t", header = T)
-
-genenamekey$MA <- toupper(genenamekey$MA)
-genenamekey$MB <- toupper(genenamekey$MB)
-
-#merge common names into genenamekey
-genenamekey['ma'] <- left_join(genenamekey, gene_names_from_huan, by=c('MA' = 'locus'))$gene1
-genenamekey['mb'] <- left_join(genenamekey, gene_names_from_huan, by=c('MB' = 'locus'))$gene1
-
-#create gene pair name...but somehow merge things like bam2/1 and vtc5/2?
-
-
-
+#Load in manual gene name data.
+genenamekey <- read.csv('data/genenamekey_cleaned.csv', header = T)
+tail(genenamekey)
+genenamekey <- select(genenamekey, -1)
 
 #genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
 #data['Genes'] <- genenamekey$gene.pair[data$Set]
+data$Set_int <- as.integer(as.character(data$Set))
 
-# Define Functions ----
+dataj <- left_join(data, genenamekey, by=c('Set_int' = 'Set'))
 
-### Models and model comparison -----
-# List of formulas/models
+# remove extra columns. rename columns. 
+data <- select(dataj, -Set_int)
+data <- rename(data,locusA = MA.y)
+data <- rename(data,locusB = MB.y)
+data <- rename(data, MA = MA.x, MB = MB.x)
+
+factor_cols_2 <- c('locusA', 'locusB', 'ma', 'mb', 'ma2', 'mb2', 'mutant_name')
+data <- data %>% mutate_at(factor_cols_2, as.factor)
+
+tail(data)
+str(data)
+
+## 4. Generate Models ----
 f.tsc <- formula(logTSC ~ MA + MB + DM )
 f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
 f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
@@ -97,7 +88,7 @@ f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-## Model Comparison and Selection----
+## 5. Model Comparison and Selection----
 
 #takes experiment number, dataframe, and two fomulas
 #returns model 1 adjusted r-squared,
@@ -131,7 +122,7 @@ mod_comp_fit_loop <- function(explist, df, f1, f2){
   return(dfr)
 }
 
-#make model comparison heatmaps----
+## 6. Generate model comparison heat maps----
 make_r2_heatmap <- function(df, main='Title'){
   #number with significant pvals from anova
   edge_exps <- df$exp[(df$apval < .05)]
@@ -157,7 +148,7 @@ make_r2_heatmap <- function(df, main='Title'){
     labs(title = r2, subtitle = r)
 }
 
-####Edge vs. no edge----
+#### 6a: Edge vs. no edge----
 #make dfs for model comps
 df_comp_tsc_edge <- mod_comp_fit_loop(setlist, data, f.tsc, f.tsc.e)
 df_comp_ln_edge <- mod_comp_fit_loop(setlist, data, f.ln, f.ln.e)
@@ -174,7 +165,7 @@ p12 <- make_r2_heatmap(df_comp_spf_edge)
 grid.arrange(p9, p10, p11, p12, nrow=1)
 #conclusion: inconclusive
 
-####Flat vs. No Flat ----
+#### 6b: Flat vs. No Flat ----
 df_comp_tsc_flat <- mod_comp_fit_loop(sets_with_flats, data, f.tsc, f.tsc.f)
 df_comp_ln_flat <- mod_comp_fit_loop(sets_with_flats, data, f.ln, f.ln.f)
 df_comp_dtb_flat <- mod_comp_fit_loop(sets_with_flats, data, f.dtb, f.dtb.f)
@@ -188,7 +179,7 @@ p4 <- make_r2_heatmap(df_comp_spf_flat)
 grid.arrange(p1,p2,p3,p4,nrow=1)
 #Conclusion: include flat
 
-####Flat with and without edge effects----
+#### 6c: Flat with and without edge effects----
 df_comp_tsc_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.tsc.f, f.tsc.ef)
 df_comp_ln_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.ln.f, f.ln.ef)
 df_comp_dtb_flat_e <- mod_comp_fit_loop(sets_with_flats, data, f.dtb.f, f.dtb.ef)
@@ -204,7 +195,7 @@ grid.arrange(p5,p6,p7,p8,nrow=1)
 
 
 #Run analysis with and without edge effects. 
-## EDA ----
+#### 6d: EDA Model Comparison ----
 
 #subset set 1
 datas1 <- subset(data, data$Set == 1)
@@ -227,7 +218,6 @@ summary(mod3)
 anova(mod1, mod2)
 
 ##Function to plot effects of flat
-setswflats <- c(1, 2, 3, 5, 7, 8, 11, 12, 14, 15, 18, 20)
 
 flatfunclogTSC <- function(x) {
   datan <- subset(data, data$Set == x)
@@ -246,11 +236,11 @@ flatfunclogTSC <- function(x) {
 
 
 par(mfrow = c(3, 4))
-for (i in setswflats) {
+for (i in sets_with_flats) {
   flatfunclogTSC(i)
 }
 
-data_from_flats <- subset(data, data$Set %in% setswflats)
+data_from_flats <- subset(data, data$Set %in% sets_with_flats)
 
 plot(LN ~ Flat, data = data_from_flats)
 m_allflats <- lm(LN ~ Flat, data = data_from_flats)
@@ -274,13 +264,13 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-### Get epistasis results and crank out graphs ----
+## 7. Get epistasis results and crank out graphs ----
 
 # should be a total of 8 figs as currently requested
 #tsc, ln, dtb, and spf with and without edge effects. 
 #But exps with flat effect will need to be modeled separately 
 
-## Functions for this section: ----
+### Functions for this epistasis plotting: ----
 #1. Get_epi_stats. Gets epistasis values for plant set. 
 # Returns a vector of relevant values
 get_epi_stats <- function(plantset, formula, df){
@@ -296,7 +286,7 @@ get_epi_stats <- function(plantset, formula, df){
   result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
   return(result)
 }
-tmp <- get_epi_stats(2222, f.tsc.e, data) #Works :)
+#tmp <- get_epi_stats(2222, f.tsc.e, data) #Works :)
 
 #2. Gets all epistasis values for trait. 
 # Returns a dataframe w epistasis values that you can then plot with plot_epi_forest
@@ -325,6 +315,7 @@ test_results <- get_epistasis_for_formula(as.character(sets_with_flats), f.dtb.f
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
 plot_epi_forest <- function(epi_data, main="Title") {
+  print(str(epi_data))
   plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
@@ -353,7 +344,7 @@ plot_epi_forest <- function(epi_data, main="Title") {
 plot_epi_forest(test_results, main="whyyyyy")
 
 
-#### Results! ----
+#### Figures ----
 
 #Results Plotting Function DELUX EDITION!!!
 forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
@@ -365,6 +356,9 @@ forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
   fplot <- plot_epi_forest(df2, main = main)           
   return(fplot)
 }
+
+forest_plot_delux(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects")
+
 
 #TSC results not edgy
 efp_tsc <- forest_plot_delux(f.tsc.f, f.tsc, "Epistasis | Total Seed Count | No Edge Effects")
@@ -392,15 +386,14 @@ efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit |
 
 ## Multiplots THE BIG PIG!~~~~
 
-ggarrange(efp_tsc, efp_tsc_e, nrow=1, legend='right',common.legend = TRUE)
-ggarrange(efp_dtb, efp_dtb_e, nrow=1, legend='right',common.legend = TRUE)
-ggarrange(efp_ln, efp_ln_e, nrow=1, legend='right',common.legend = TRUE)
-ggarrange(efp_spf, efp_spf_e, nrow=1, legend='right',common.legend = TRUE)
+#ggarrange(efp_tsc, efp_tsc_e, nrow=1, legend='right',common.legend = TRUE)
+#ggarrange(efp_dtb, efp_dtb_e, nrow=1, legend='right',common.legend = TRUE)
+#ggarrange(efp_ln, efp_ln_e, nrow=1, legend='right',common.legend = TRUE)
+#ggarrange(efp_spf, efp_spf_e, nrow=1, legend='right',common.legend = TRUE)
+# Use models w no edge effects. Edge effects -> supplement
 
-##Comp plot for different Ys ----
-
+## Create Forest Plots W Gene Names That Compare Different Fitness Values ----
 ggarrange(efp_tsc_e, efp_dtb_e, efp_ln_e, efp_spf_e,nrow=1,legend='right',common.legend=T)
-#Goal: Multiplot w common Y axis showing all 4 epi estimates.
 
 #Step 1: Get Y scale from efp_tcs_e
 #hack to extract y axis order
@@ -435,16 +428,65 @@ scale_y_continuous(name = "Gene Pair",
   
   
   
-  
-  
-#Fig 2: Multiplot of Fitness Values by Genotype ----
+# Is the coefficient for A and B fitness in the linear model  their relative fitness? ----
 
+# 1. Get mean relative fitness (for set 38 as an example)
+dataset38 = data[which(data$Set==38), ]
+
+means_set38 = dataset38 %>%
+  group_by(Genotype) %>%
+  summarise_at(vars(TSC, logTSC, DTB, SN, SPF), list(mean = mean))
+
+means_set38
+
+rel_fitness_38 = means_set38 %>% mutate(across(where(is.numeric), ~./.[Genotype == "WT"]))
+
+# 2. Get lm coefficients for set 38
+model38 <- lm(f.tsc, data=dataset38, na.action = na.exclude)
+
+summary(model38)
+
+df_pred_dummy <- data.frame(MA  = c(0,1,0,1),
+                  MB = c(0,0,1,1),
+                  DM = c(0,0,0,1)
+)
+rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM")
+df_pred_dummy
+
+pred_38 = predict(model38, df_pred_dummy, interval="confidence") ## Value estimates w confints!!!
+
+wt_38_logtsc = pred_38[1,1]
+correct_answer_38 = pred_38/wt_38_logtsc #Normalized! But is it legit to normalized confidence intervals? Seems sketchy.
+correct_answer_38 ##GETS CORRECT REL FITNESS...BUT ARE CIs CORRECT?
+rel_fitness_38
+
+#PRE-NORMALIZE RESULTS TO WT AND COMPARE CIs
+
+#normalize logTSC to WT
+dataset38['logTSC.norm'] = dataset38['logTSC']/wt_38_fit
+str(dataset38)
+#Make model
+f.tscnorm <- formula(logTSC.norm ~ MA + MB + DM )
+model38norm <- lm(f.tscnorm, data=dataset38, na.action = na.exclude)
+summary(model38norm)
+pred_38_norm = predict(model38norm, df_pred_dummy, interval="confidence")
+pred_38_norm
+correct_answer_38 #Phew CIs are correct.
+all.equal(pred_38_norm, correct_answer_38)
+
+
+#Fig 2: Multiplot of Fitness Values by Genotype ----
+#1. Fix NAs (2222s)
+#2. Normalized by WT fitness
+#3. Code by epistasis value
+#4. Add CIs/error bars
+#5. Add titles
 facetplotprelim <- function(Fitness_Value){
   p <- ggplot(data, aes(x=Genotype, y=Fitness_Value)) + 
     geom_bar(position = "dodge",
               stat = "summary",
               fun = "mean") +
-    facet_wrap(~Set) +
+    facet_wrap(~mutant_name) +
     scale_x_discrete(limits = c("WT", "MA", "MB", "DM")) +
     theme_bw()
   
@@ -452,8 +494,9 @@ facetplotprelim <- function(Fitness_Value){
   }
 
 facetplotprelim(data$TSC)
-facetplotprelim(data$logTSC)  
+facetplotprelim(data$logTSC)
 facetplotprelim(data$DTB)
 facetplotprelim(data$LN)
 facetplotprelim(data$SPF)
   
+str(data)
