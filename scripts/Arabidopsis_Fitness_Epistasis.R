@@ -474,6 +474,28 @@ pred_38_norm
 correct_answer_38 #Phew CIs are correct.
 all.equal(pred_38_norm, correct_answer_38)
 
+set_38_means_df = as.data.frame.array(correct_answer_38)
+#Bargraph w error bars sample
+ggplot(set_38_means_df) +
+  geom_bar( aes(x=name, y=value), stat="fit", fill="skyblue", alpha=0.7) +
+  geom_errorbar( aes(x=name, ymin="lwr", ymax="upr"), width=0.4, colour="orange", size=1.3)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 #Fig 2: Multiplot of Fitness Values by Genotype ----
 #1. Fix NAs (2222s)
