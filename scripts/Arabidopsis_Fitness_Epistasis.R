@@ -475,14 +475,20 @@ correct_answer_38 #Phew CIs are correct.
 all.equal(pred_38_norm, correct_answer_38)
 
 set_38_means_df = as.data.frame.array(correct_answer_38)
-#Bargraph w error bars sample
-ggplot(set_38_means_df) +
-  geom_bar( aes(x=name, y=value), stat="fit", fill="skyblue", alpha=0.7) +
-  geom_errorbar( aes(x=name, ymin="lwr", ymax="upr"), width=0.4, colour="orange", size=1.3)
+set_38_means_df['Genotype'] = rownames(set_38_means_df)
 
+level_order <- c("WT", "MA", "MB", "DM")
 
-
-
+#Relative Fitness Bargraph w error bars sample! 
+ggplot(set_38_means_df, aes(x = factor(Genotype, level = level_order), y = fit)) +
+  geom_col() + 
+  geom_errorbar(aes(x=Genotype, ymin=lwr, ymax=upr), width=0.3, color="grey", size=1) + 
+  xlab("Genotype") +
+  ylab("Relative Fitness") +
+  ggtitle("Set 38: Rglg1 and Rglg2") +
+  theme_classic()
+  
+#Works! Hooray!!
 
 
 
