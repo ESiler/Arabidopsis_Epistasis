@@ -11,7 +11,7 @@ library(tidyr)
 library(gridExtra)
 
 ## 2. Load data ----
-data = read.delim("data/compiled_fitness_data_092922.txt", sep = "\t", header = T)
+data = read.delim("data/Fitness_data_83_sets_24Jan2023.txt", sep = "\t", header = T)
 
 
 ## 3. Format data for analysis ----
@@ -45,13 +45,13 @@ sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 
 #Load in manual gene name data.
 genenamekey <- read.csv('data/genenamekey_cleaned.csv', header = T)
-tail(genenamekey)
 genenamekey <- select(genenamekey, -1)
+tail(genenamekey)
 
-#genenamekey['gene.pair'] <- paste(genenamekey$MA, '.', genenamekey$MB, sep='')
-#data['Genes'] <- genenamekey$gene.pair[data$Set]
+#Convert sets to integer to merge w genenamekey dataset
 data$Set_int <- as.integer(as.character(data$Set))
 
+#Merge data with gene name dataset
 dataj <- left_join(data, genenamekey, by=c('Set_int' = 'Set'))
 
 # remove extra columns. rename columns. 
@@ -63,6 +63,7 @@ data <- rename(data, MA = MA.x, MB = MB.x)
 factor_cols_2 <- c('locusA', 'locusB', 'ma', 'mb', 'ma2', 'mb2', 'mutant_name')
 data <- data %>% mutate_at(factor_cols_2, as.factor)
 
+rm(dataj)
 tail(data)
 str(data)
 
@@ -88,7 +89,45 @@ f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-## 5. Model Comparison and Selection----
+#Make a collection of dummy df for model prediction
+#Dummy matrix for predictions
+df_pred_dummy <- data.frame(MA  = c(0,1,0,1),
+                            MB = c(0,0,1,1),
+                            DM = c(0,0,0,1)
+)
+rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM")
+
+df_pred_dummy.e <- data.frame(MA  = c(0,1,0,1),
+                            MB = c(0,0,1,1),
+                            DM = c(0,0,0,1),
+                            Type = c("INSIDE","INSIDE","INSIDE","INSIDE")
+)
+rownames(df_pred_dummy.e) = c("WT", "MA", "MB", "DM")
+df_pred_dummy.e
+
+df_pred_dummy.f <- data.frame(MA  = c(0,1,0,1),
+                              MB = c(0,0,1,1),
+                              DM = c(0,0,0,1),
+                              Flat = c('1','1','1','1')
+)
+
+rownames(df_pred_dummy.f) = c("WT", "MA", "MB", "DM")
+df_pred_dummy.f
+
+rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM")
+
+df_pred_dummy.ef <- data.frame(MA  = c(0,1,0,1),
+                              MB = c(0,0,1,1),
+                              DM = c(0,0,0,1),
+                              Type = c("INSIDE","INSIDE","INSIDE","INSIDE"),
+                              Flat = c('1','1','1','1')
+)
+rownames(df_pred_dummy.ef) = c("WT", "MA", "MB", "DM")
+df_pred_dummy.ef
+
+
+
+## 5. Model Comparison and Selection: CAN SKIP TO PART 7 HERE----
 
 #takes experiment number, dataframe, and two fomulas
 #returns model 1 adjusted r-squared,
@@ -268,11 +307,15 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
 
 # should be a total of 8 figs as currently requested
 #tsc, ln, dtb, and spf with and without edge effects. 
-#But exps with flat effect will need to be modeled separately 
+#But exps with flat effect need to be modeled separately 
 
 ### Functions for this epistasis plotting: ----
+
 #1. Get_epi_stats. Gets epistasis values for plant set. 
 # Returns a vector of relevant values
+
+#Dummy matrix for predictions
+
 get_epi_stats <- function(plantset, formula, df){
   dfsubset <- subset(df, Set == plantset)
   model <- lm(formula, data=dfsubset, na.action = na.exclude)
@@ -284,9 +327,28 @@ get_epi_stats <- function(plantset, formula, df){
   pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
   #Return stats
   result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e)
+
   return(result)
 }
-#tmp <- get_epi_stats(2222, f.tsc.e, data) #Works :)
+
+tmp <- get_epi_stats(2222, f.tsc, data) #Need to make dummy frame flexible based on model
+tmp
+
+#Make a separate function to get the predicted fitness stats
+get_relfit_stats <- function(plantset, formula, df, df_pred){
+  dfsubset <- subset(df, Set == plantset)
+  model <- lm(formula, data=dfsubset, na.action = na.exclude)
+  
+  #PART 2: Get relative fitness and confidence intervals
+  pred_fit = predict(model, df_pred, interval="confidence") 
+  pred_rel_fit = pred_fit/pred_fit[1,1]
+  return(pred_rel_fit)
+}
+
+tmp <- get_relfit_stats(2, f.tsc.ef, data, df_pred_dummy.ef) #Need to make dummy frame flexible based on model
+as.vector(tmp)
+
+
 
 #2. Gets all epistasis values for trait. 
 # Returns a dataframe w epistasis values that you can then plot with plot_epi_forest
@@ -298,6 +360,7 @@ get_epistasis_for_formula <- function(plantsets, formula, df=data) {
     v <- get_epi_stats(i, formula=formula, df=df)
     resultlist[[i]] <- as.numeric(v)
   }
+  
   df_result <- as.data.frame(t(as.data.frame(resultlist, 
                                              row.names = c('Set', 'e_est',
                                                            'lowerCI', 'upperCI', 
@@ -311,6 +374,8 @@ get_epistasis_for_formula <- function(plantsets, formula, df=data) {
 }
 #test
 test_results <- get_epistasis_for_formula(as.character(sets_with_flats), f.dtb.f)
+test_results #EXPAND THIS DATAFRAME TO INCLUDE GENE NAMES, AND REL. FITNESSSSSSSS
+
 
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
@@ -456,14 +521,15 @@ df_pred_dummy
 pred_38 = predict(model38, df_pred_dummy, interval="confidence") ## Value estimates w confints!!!
 
 wt_38_logtsc = pred_38[1,1]
+
 correct_answer_38 = pred_38/wt_38_logtsc #Normalized! But is it legit to normalized confidence intervals? Seems sketchy.
-correct_answer_38 ##GETS CORRECT REL FITNESS...BUT ARE CIs CORRECT?
+correct_answer_38 ##GETS CORRECT REL FITNESS...BUT ARE CIs CORRECT? (result: Yes.)
 rel_fitness_38
 
 #PRE-NORMALIZE RESULTS TO WT AND COMPARE CIs
 
 #normalize logTSC to WT
-dataset38['logTSC.norm'] = dataset38['logTSC']/wt_38_fit
+dataset38['logTSC.norm'] = dataset38['logTSC']/wt_38_logtsc
 str(dataset38)
 #Make model
 f.tscnorm <- formula(logTSC.norm ~ MA + MB + DM )
@@ -489,21 +555,25 @@ ggplot(set_38_means_df, aes(x = factor(Genotype, level = level_order), y = fit))
   theme_classic()
   
 #Works! Hooray!!
+#Get variables to make dummy table for predictions
+summary(model38norm)
+
+str(coef(model38norm))
+
+length(f.dtb.ef)
+f.dtb.ef[[1]]
+f.dtb.ef[[2]]
+pred_vars <- f.dtb.ef[[3]] #WOOHOOOOOOO!
+
+pred_vars_c = deparse(pred_vars)
+
+pred_vars = strsplit(pred_vars_c, " . ")[[1]]
 
 
+#Okay now get string in a format that can be used to fill in a table ----
 
 
-
-
-
-
-
-
-
-
-
-
-#Fig 2: Multiplot of Fitness Values by Genotype ----
+j#Fig 2: Multiplot of Fitness Values by Genotype ----
 #1. Fix NAs (2222s)
 #2. Normalized by WT fitness
 #3. Code by epistasis value
