@@ -618,27 +618,23 @@ str(data)
 
 #A. Create results DFs for non-edge models
 
+#Make epistasis and rel. fitness results dataframe combining sets with and without flats
+get_rfit_results_df <- function(woflatfunc, wflatfunc, data, d1=df_pred_dummy, d2=df_pred_dummy.f){
+  r.df <- get_epistasis_for_formula(sets_without_flats, woflatfunc, d1, data)
+  r.df.f <- get_epistasis_for_formula(sets_with_flats, wflatfunc, d2, data)
+  r.df.r <- rbind(r.df, r.df.f)
+  r.df.r <- arrange(r.df.r, e_est)
+  r.df.r$row <- c(1:1:dim(r.df.r)[1])
+  return(r.df.r)
+}
 
-r.df.tsc <- get_epistasis_for_formula(sets_without_flats, f.tsc, df_pred_dummy, data)
+results.df.tsc <- get_rfit_results_df(woflatfunc = f.tsc, wflatfunc = f.tsc.f, data = data)
+results.df.dtb <- get_rfit_results_df(woflatfunc = f.dtb, wflatfunc = f.dtb.f, data = data)
+results.df.ln <- get_rfit_results_df(woflatfunc = f.ln, wflatfunc = f.ln.f, data = data)
+results.df.spf <- get_rfit_results_df(woflatfunc = f.dtb, wflatfunc = f.ln.f, data = data)
 
-r.df.tsc.f <- get_epistasis_for_formula(sets_with_flats, f.tsc.f, df_pred_dummy.f, data)
-
-
-
-  '''
-  forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
-    df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
-    df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
-    df2 <- rbind(df_f, df_wof)
-    df2 <- arrange(df2, e_est)
-    df2['row'] <- (1:(dim(df2)[1]))
-    fplot <- plot_epi_forest(df2, main = main)           
-    return(fplot)
-  }
-  '''
-results.df.dtb <- F
-results.df.ln <- F
-results.df.spf <- F
+#GET PLANT SET ORDER -- IMPORTANT
+set.order <- r.df.tsc$Set
 #B. Plotting Function
 
 
