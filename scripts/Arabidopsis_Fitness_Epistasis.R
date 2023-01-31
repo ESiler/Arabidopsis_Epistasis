@@ -640,3 +640,25 @@ set.order <- r.df.tsc$Set
 
 #C. Plots :)
 
+#1: Relative Fitness Heatmap
+head(results.df.tsc)
+#Get results in long format
+data_hm_tmp <- cbind(results.df.tsc[1:2], stack(results.df.tsc[7:10]))
+data_hm_tmp$Set <- as.factor(data_hm_tmp$Set)
+ggplot(data_hm_tmp, aes(ind, Set, fill=values)) +
+  geom_tile()
+
+
+
+x <- LETTERS[1:20]
+y <- paste0("var", seq(1,20))
+data <- expand.grid(X=x, Y=y)
+data$Z <- runif(400, 0, 5)
+
+# Heatmap 
+ggplot(data, aes(X, Y, fill= Z)) + 
+  geom_tile()
+
+
+
+
