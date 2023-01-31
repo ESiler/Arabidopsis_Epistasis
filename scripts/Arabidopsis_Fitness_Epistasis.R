@@ -635,6 +635,7 @@ results.df.spf <- get_rfit_results_df(woflatfunc = f.dtb, wflatfunc = f.ln.f, da
 
 #GET PLANT SET ORDER -- IMPORTANT
 set.order <- r.df.tsc$Set
+names.order <- r.df.tsc$mutant_name
 #B. Plotting Function
 
 
@@ -643,22 +644,23 @@ set.order <- r.df.tsc$Set
 #1: Relative Fitness Heatmap
 head(results.df.tsc)
 #Get results in long format
-data_hm_tmp <- cbind(results.df.tsc[1:2], stack(results.df.tsc[7:10]))
+data_hm_tmp <- cbind(results.df.tsc[c(1,2,24,25)], stack(results.df.tsc[7:10]))
 data_hm_tmp$Set <- as.factor(data_hm_tmp$Set)
-ggplot(data_hm_tmp, aes(ind, Set, fill=values)) +
-  geom_tile()
+data_hm_tmp <- data_hm_tmp %>% filter(ind != 'WT_w')
+head(data_hm_tmp)
 
+ggplot(data_hm_tmp, aes(ind, mutant_name, fill=values)) +
+  scale_fill_gradient2(low = "blue", mid = "white", high = "#D9027D", midpoint = 1) +
+  geom_tile() +
+  scale_x_discrete(labels=c('geneA', 'geneB', 'double.mutant')) +
+  scale_y_discrete(limits = rev(names.order)) +
+  xlab('Mutation') +
+  ylab('Gene Pair') +
+  labs(fill = "Relative Fitness") +
+  ggtitle('Relative Fitness', subtitle='Total Seed Count')
 
-
-x <- LETTERS[1:20]
-y <- paste0("var", seq(1,20))
-data <- expand.grid(X=x, Y=y)
-data$Z <- runif(400, 0, 5)
-
-# Heatmap 
-ggplot(data, aes(X, Y, fill= Z)) + 
-  geom_tile()
-
-
-
+#add significance (boxes?)
+#set version and gene name version
+#add fruit 
+#values = c("#D9027D", 'black', 'blue'))
 
