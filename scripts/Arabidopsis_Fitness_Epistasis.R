@@ -309,7 +309,8 @@ p <- pf(summ$fstatistic[1],              # Applying pf() function
 #tsc, ln, dtb, and spf with and without edge effects. 
 #But exps with flat effect need to be modeled separately 
 
-### Functions for this epistasis plotting: ----
+### Get epistasis stats and generate results df ----
+
 
 #1. Get_epi_stats. Gets epistasis values for plant set. 
 # Returns a vector of relevant values
@@ -328,17 +329,17 @@ get_epi_stats <- function(plantset, formula, df_pred, df){
   
   pred_fit = predict(model, df_pred, interval="confidence") 
   pred_rel_fit = pred_fit/pred_fit[1,1]
+  
+  pvals <- summary(model)$coefficients[,4]
   #Return stats
-  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e, pred_rel_fit)
+  result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e, pred_rel_fit, pvals)
 
   return(result)
 }
 
-tmp <- get_epi_stats(2222, f.tsc, df_pred_dummy, data) #Need to make dummy frame flexible based on model
+tmp <- get_epi_stats(845, f.tsc, df_pred_dummy, data) #Need to make dummy frame flexible based on model
 tmp
-
-
-resultlist <- list()
+length(tmp)
 
 for (i in sets_with_flats){
   v <- get_epi_stats(i, formula=f.tsc, df=data, df_pred=df_pred_dummy)
@@ -358,7 +359,12 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
   these_rownames =  c('Set', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e', 
                       'WT_w', 'MA_w', 'MB_w', 'DM_w', 
                       'WT_w_lci', 'MA_w_lci', 'MB_w_lci', 'DM_w_lci', 
-                      'WT_w_uci', 'MA_w_uci', 'MB_w_uci', 'DM_w_uci')
+                      'WT_w_uci', 'MA_w_uci', 'MB_w_uci', 'DM_w_uci',
+                      'pval_int', 'pval_MA', 'pval_MB', 'pval_DM')
+  #QC: All sets must actually have enough data to have the full amount of results
+  resultlist = resultlist[lengths(resultlist) == length(these_rownames)]
+  
+  
   df_result <- as.data.frame(t(as.data.frame(resultlist, 
                                              row.names = these_rownames,
                                              byrow=FALSE)))
@@ -370,14 +376,18 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
                                                                       lowerCI <=  0 & upperCI >= 0 ~ 'Not Detected'))
   #Add gene names
   set_key = unique(df[c("Set","mutant_name")])
-  df_results = merge(df_results, set_key)
+  df_results = merge(df_results, set_key, sort=FALSE)
   #Return results
   return(df_results)
 }
 #test
 test_results2 <- get_epistasis_for_formula(sets_without_flats, f.dtb, df_pred_dummy, data)
-test_results2 
+tail(test_results2)
 
+#
+
+
+# Make forest plots ----
 
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
@@ -408,7 +418,7 @@ plot_epi_forest <- function(epi_data, main="Title") {
   plot
 }
 
-plot_epi_forest(test_results2, main="whyyyyy")
+plot_epi_forest(test_results2, main="Test/Sample Plot")
 
 
 #### Figures ----
@@ -511,7 +521,7 @@ rel_fitness_38 = means_set38 %>% mutate(across(where(is.numeric), ~./.[Genotype 
 # 2. Get lm coefficients for set 38
 model38 <- lm(f.tsc, data=dataset38, na.action = na.exclude)
 
-summary(model38)
+summary(model38)$coefficients[,4]
 
 df_pred_dummy <- data.frame(MA  = c(0,1,0,1),
                   MB = c(0,0,1,1),
@@ -600,3 +610,6 @@ facetplotprelim(data$LN)
 facetplotprelim(data$SPF)
   
 str(data)
+### A. Get results for non-edge models; B. make rel fit plots. ----
+
+
