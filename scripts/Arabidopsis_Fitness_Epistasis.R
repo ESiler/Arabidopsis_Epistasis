@@ -330,14 +330,14 @@ get_epi_stats <- function(plantset, formula, df_pred, df){
   pred_fit = predict(model, df_pred, interval="confidence") 
   pred_rel_fit = pred_fit/pred_fit[1,1]
   
-  pvals <- summary(model)$coefficients[,4]
+  pvals <- summary(model)$coefficients[,4][1:4]
   #Return stats
   result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e, pred_rel_fit, pvals)
 
   return(result)
 }
 
-tmp <- get_epi_stats(845, f.tsc, df_pred_dummy, data) #Need to make dummy frame flexible based on model
+tmp <- get_epi_stats(5, f.tsc.f, df_pred_dummy.f, data) #Need to make dummy frame flexible based on model
 tmp
 length(tmp)
 
@@ -380,9 +380,13 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
   #Return results
   return(df_results)
 }
+
+r.df.tsc.f <- get_epistasis_for_formula(sets_with_flats, f.tsc.f, df_pred_dummy.f, data)
+r.df.tsc.f
+
 #test
-test_results2 <- get_epistasis_for_formula(sets_without_flats, f.dtb, df_pred_dummy, data)
-tail(test_results2)
+#test_results2 <- get_epistasis_for_formula(sets_without_flats, f.dtb, df_pred_dummy, data)
+#tail(test_results2)
 
 #
 
@@ -612,4 +616,31 @@ facetplotprelim(data$SPF)
 str(data)
 ### A. Get results for non-edge models; B. make rel fit plots. ----
 
+#A. Create results DFs for non-edge models
+
+
+r.df.tsc <- get_epistasis_for_formula(sets_without_flats, f.tsc, df_pred_dummy, data)
+
+r.df.tsc.f <- get_epistasis_for_formula(sets_with_flats, f.tsc.f, df_pred_dummy.f, data)
+
+
+
+  '''
+  forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
+    df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
+    df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
+    df2 <- rbind(df_f, df_wof)
+    df2 <- arrange(df2, e_est)
+    df2['row'] <- (1:(dim(df2)[1]))
+    fplot <- plot_epi_forest(df2, main = main)           
+    return(fplot)
+  }
+  '''
+results.df.dtb <- F
+results.df.ln <- F
+results.df.spf <- F
+#B. Plotting Function
+
+
+#C. Plots :)
 
