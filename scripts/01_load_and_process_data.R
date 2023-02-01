@@ -49,4 +49,5 @@ factor_cols_2 <- c('locusA', 'locusB', 'ma', 'mb', 'ma2', 'mb2', 'mutant_name')
 data <- data %>% mutate_at(factor_cols_2, as.factor)
 
 #Save processed data :-)
+rm(dataj)
 saveRDS(data, file = "rdata/01_data.rds")
