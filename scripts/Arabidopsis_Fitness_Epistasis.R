@@ -68,29 +68,39 @@ tail(data)
 str(data)
 
 ## 4. Generate Models ----
+
+#Total seed count
 f.tsc <- formula(logTSC ~ MA + MB + DM )
 f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
 f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
 f.tsc.ef <- formula(logTSC ~ MA + MB + DM + Type + Flat)
 tsc_formulas <- c(f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
 
+#Leaf number
 f.ln <- formula(log10(LN) ~ MA + MB + DM)
 f.ln.e <- formula(log10(LN) ~ MA + MB + DM + Type)
 f.ln.f <- formula(log10(LN) ~ MA + MB + DM + Flat)
 f.ln.ef <- formula(log10(LN) ~ MA + MB + DM + Type + Flat)
 
+#Days to bolt
 f.dtb <- formula(log10(DTB) ~ MA + MB + DM)
 f.dtb.e <- formula(log10(DTB) ~ MA + MB + DM + Type)
 f.dtb.f <- formula(log10(DTB) ~ MA + MB + DM + Flat)
 f.dtb.ef <- formula(log10(DTB) ~ MA + MB + DM + Type + Flat)
 
+#Seeds per fruit
 f.spf <- formula(log10(SPF) ~ MA + MB + DM)
 f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
 f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
 f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
 
-#Make a collection of dummy df for model prediction
-#Dummy matrix for predictions
+#Silique number
+f.sn <- formula(log10(SN) ~ MA + MB + DM)
+f.sn.e <- formula(log10(SN) ~ MA + MB + DM + Type)
+f.sn.f <- formula(log10(SN) ~ MA + MB + DM + Flat)
+f.sn.ef <- formula(log10(SN) ~ MA + MB + DM + Type + Flat)
+
+#Make a collection of dummy dataframes to make prediction w models
 df_pred_dummy <- data.frame(MA  = c(0,1,0,1),
                             MB = c(0,0,1,1),
                             DM = c(0,0,0,1)
@@ -573,7 +583,7 @@ ggplot(set_38_means_df, aes(x = factor(Genotype, level = level_order), y = fit))
 #Works! Hooray!!
 #Get variables to make dummy table for predictions
 summary(model38norm)
-
+plot(model38norm)
 str(coef(model38norm))
 
 length(f.dtb.ef)
