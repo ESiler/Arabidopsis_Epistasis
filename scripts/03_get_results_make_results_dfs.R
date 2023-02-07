@@ -96,6 +96,10 @@ r.df.ln <- get_r.df(f.ln.f, f.ln, df_pred_dummy.f, df_pred_dummy)
 #5: Days to bolt
 r.df.dtb <-get_r.df(f.dtb.f, f.dtb, df_pred_dummy.f, df_pred_dummy)
 
+#GET PLANT SET ORDER -- to use in plot order
+set.order <- r.df.tsc$Set
+names.order <- r.df.tsc$mutant_name
+
 
 #Combine all results in mega dataframe
 r.df.all_results <- bind_rows((r.df.tsc %>% mutate(trait = "total_seed_count")), 
@@ -105,9 +109,6 @@ r.df.all_results <- bind_rows((r.df.tsc %>% mutate(trait = "total_seed_count")),
           r.df.dtb %>% mutate(trait = "days_to_bolt"))
 
 r.df.all_results$trait <- as.factor(r.df.all_results$trait)
-
-
-#summary(r.df.all_results)
 
 #Write DF -- uncomment to overwrite results csv
 #write.csv(r.df.all_results, file = "results/data/all_results_data.csv")

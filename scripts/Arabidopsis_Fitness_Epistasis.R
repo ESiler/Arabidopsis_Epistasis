@@ -237,24 +237,8 @@ facetplotprelim(data$LN)
 facetplotprelim(data$SPF)
   
 str(data)
-### A. Get results for non-edge models; B. make rel fit plots. ----
 
-#A. Create results DFs for non-edge models
 
-#Make epistasis and rel. fitness results dataframe combining sets with and without flats
-get_rfit_results_df <- function(woflatfunc, wflatfunc, data, d1=df_pred_dummy, d2=df_pred_dummy.f){
-  r.df <- get_epistasis_for_formula(sets_without_flats, woflatfunc, d1, data)
-  r.df.f <- get_epistasis_for_formula(sets_with_flats, wflatfunc, d2, data)
-  r.df.r <- rbind(r.df, r.df.f)
-  r.df.r <- arrange(r.df.r, e_est)
-  r.df.r$row <- c(1:1:dim(r.df.r)[1])
-  return(r.df.r)
-}
-
-results.df.tsc <- get_rfit_results_df(woflatfunc = f.tsc, wflatfunc = f.tsc.f, data = data)
-results.df.dtb <- get_rfit_results_df(woflatfunc = f.dtb, wflatfunc = f.dtb.f, data = data)
-results.df.ln <- get_rfit_results_df(woflatfunc = f.ln, wflatfunc = f.ln.f, data = data)
-results.df.spf <- get_rfit_results_df(woflatfunc = f.dtb, wflatfunc = f.ln.f, data = data)
 
 #GET PLANT SET ORDER -- IMPORTANT
 set.order <- r.df.tsc$Set
