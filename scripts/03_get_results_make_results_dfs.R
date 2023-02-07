@@ -30,6 +30,7 @@ tmp <- get_epi_stats(5, f.tsc.f, df_pred_dummy.f, data) #Need to make dummy fram
 tmp
 length(tmp)
 
+resultlist <- list()
 for (i in sets_with_flats){
   v <- get_epi_stats(i, formula=f.tsc, df=data, df_pred=df_pred_dummy)
   resultlist[[i]] <- as.numeric(v)
@@ -70,5 +71,49 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
   return(df_results)
 }
 
-r.df.tsc.f <- get_epistasis_for_formula(sets_with_flats, f.tsc.f, df_pred_dummy.f, data)
-r.df.tsc.f
+#Create results DFs for each fitness phenotype: ----
+#TSC, DTB, LN, Silique Number, Seeds per Fruit
+
+
+#Make results DF with both flat and non-flat plant sets
+get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
+  df.r.f <- get_epistasis_for_formula(sets_with_flats, formula.f, dummymatrix.f, data)
+  df.r <- get_epistasis_for_formula(sets_without_flats, formula, dummymatrix, data)                                  
+  df.r.all <- arrange(rbind(df.r.f, df.r), e_est)
+  return(df.r.all)
+  }
+
+#Creates all results dataframes:
+
+#1: total seed count
+r.df.tsc <- get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy)
+#2: Silique Number
+r.df.sn <- get_r.df(f.sn.f, f.sn, df_pred_dummy.f, df_pred_dummy)
+#3: Seeds per fruit
+r.df.spf <- get_r.df(f.spf.f, f.spf, df_pred_dummy.f, df_pred_dummy)
+#4: Leaf number
+r.df.ln <- get_r.df(f.ln.f, f.ln, df_pred_dummy.f, df_pred_dummy)
+#5: Days to bolt
+r.df.dtb <-get_r.df(f.dtb.f, f.dtb, df_pred_dummy.f, df_pred_dummy)
+
+
+#Combine all results in mega dataframe
+r.df.all_results <- bind_rows((r.df.tsc %>% mutate(trait = "total_seed_count")), 
+          r.df.sn %>% mutate(trait = "silique_number"), 
+          r.df.spf %>% mutate(trait = "seeds_per_fruit"), 
+          r.df.ln %>% mutate(trait = "leaf_number"), 
+          r.df.dtb %>% mutate(trait = "days_to_bolt"))
+
+r.df.all_results$trait <- as.factor(r.df.all_results$trait)
+
+
+#summary(r.df.all_results)
+
+#Write DF -- uncomment to overwrite results csv
+#write.csv(r.df.all_results, file = "results/data/all_results_data.csv")
+
+#Save variables etc for import into next script:
+save.image(file = "rdata/03_workspace.RData")
+
+
+
