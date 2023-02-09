@@ -80,8 +80,12 @@ get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   df.r.f <- get_epistasis_for_formula(sets_with_flats, formula.f, dummymatrix.f, data)
   df.r <- get_epistasis_for_formula(sets_without_flats, formula, dummymatrix, data)                                  
   df.r.all <- arrange(rbind(df.r.f, df.r), e_est)
+  df.r.all$row <- as.numeric(row.names(r.df.tsc))
   return(df.r.all)
   }
+r.df.tsc <- get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy)
+
+r.df.tsc
 
 #Creates all results dataframes:
 

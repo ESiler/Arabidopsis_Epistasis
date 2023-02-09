@@ -12,7 +12,6 @@ load("rdata/03_workspace.RData")
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
 plot_epi_forest <- function(epi_data, main="Title") {
-  print(str(epi_data))
   plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
@@ -40,21 +39,15 @@ plot_epi_forest <- function(epi_data, main="Title") {
 
 
 
-#plot_epi_forest(test_results2, main="Test/Sample Plot")
-
-forest_plot_delux <- function(f1_flats, f2_notflats, main="Title"){
-  df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
-  df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
-  df2 <- rbind(df_f, df_wof)
-  df2 <- arrange(df2, e_est)
-  df2['row'] <- (1:(dim(df2)[1]))
-  fplot <- plot_epi_forest(df2, main = main)           
-  return(fplot)
-}
-
-forest_plot_delux(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects")
+plot_epi_forest(r.df.tsc, main="Epistasis: Total Seed Count")
+plot_epi_forest(r.df.dtb, main="Epistasis: Days to Bolt")
+plot_epi_forest(r.df.ln, main="Epistasis: Leaf Number")
+plot_epi_forest(r.df.sn, main="Epistasis: Silique Number")
+plot_epi_forest(r.df.spf, main="Epistasis: Seed per Fruit")
 
 
+
+'''
 #TSC results not edgy
 efp_tsc <- forest_plot_delux(f.tsc.f, f.tsc, "Epistasis | Total Seed Count | No Edge Effects")
 
@@ -78,7 +71,7 @@ efp_spf <- forest_plot_delux(f.spf.f, f.spf, "Epistasis | Seeds Per Fruit | No E
 
 #SPF results edgy
 efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit | With Edge Effects")
-
+'''
 ## Multiplots THE BIG PIG!~~~~
 
 #ggarrange(efp_tsc, efp_tsc_e, nrow=1, legend='right',common.legend = TRUE)
