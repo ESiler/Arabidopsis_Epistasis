@@ -8,13 +8,6 @@ load("rdata/02_workspace.RData")
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-scale_y_continuous(name = "Gene Pair", 
-                   breaks=1:dim(epi_data)[1], 
-                   labels = epi_data$Set, 
-                   trans = "reverse", 
-                   expand = c(0,0.5)) 
-  
-  
   
 # Is the coefficient for A and B fitness in the linear model  their relative fitness? ----
 

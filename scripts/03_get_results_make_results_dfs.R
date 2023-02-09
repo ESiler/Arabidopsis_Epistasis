@@ -75,6 +75,9 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
 #TSC, DTB, LN, Silique Number, Seeds per Fruit
 
 
+
+
+
 #Make results DF with both flat and non-flat plant sets
 get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   df.r.f <- get_epistasis_for_formula(sets_with_flats, formula.f, dummymatrix.f, data)
@@ -85,20 +88,28 @@ get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   }
 r.df.tsc <- get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy)
 
-r.df.tsc
+
 
 #Creates all results dataframes:
 
-#1: total seed count
+#0: total seed count set order
 r.df.tsc <- get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy)
+
+df.set.order <- r.df.tsc %>% select(Set, row)
+colnames(df.set.order) <- c("Set", "Order")
+mut_name_order <- as.character(r.df.tsc$mutant_name)
+
+
+#1 Total Seed Count
+r.df.tsc <- merge(get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy), df.set.order, sort=F)
 #2: Silique Number
-r.df.sn <- get_r.df(f.sn.f, f.sn, df_pred_dummy.f, df_pred_dummy)
+r.df.sn <- merge(get_r.df(f.sn.f, f.sn, df_pred_dummy.f, df_pred_dummy), df.set.order, sort=F)
 #3: Seeds per fruit
-r.df.spf <- get_r.df(f.spf.f, f.spf, df_pred_dummy.f, df_pred_dummy)
+r.df.spf <- merge(get_r.df(f.spf.f, f.spf, df_pred_dummy.f, df_pred_dummy), df.set.order, sort=F)
 #4: Leaf number
-r.df.ln <- get_r.df(f.ln.f, f.ln, df_pred_dummy.f, df_pred_dummy)
+r.df.ln <- merge(get_r.df(f.ln.f, f.ln, df_pred_dummy.f, df_pred_dummy), df.set.order, sort=F)
 #5: Days to bolt
-r.df.dtb <-get_r.df(f.dtb.f, f.dtb, df_pred_dummy.f, df_pred_dummy)
+r.df.dtb <-merge(get_r.df(f.dtb.f, f.dtb, df_pred_dummy.f, df_pred_dummy), df.set.order, sort=F)
 
 #GET PLANT SET ORDER -- to use in plot order
 set.order <- r.df.tsc$Set
@@ -118,6 +129,7 @@ r.df.all_results$trait <- as.factor(r.df.all_results$trait)
 #write.csv(r.df.all_results, file = "results/data/all_results_data.csv")
 
 #Save variables etc for import into next script:
+#uncomment to overwrite
 save.image(file = "rdata/03_workspace.RData")
 
 

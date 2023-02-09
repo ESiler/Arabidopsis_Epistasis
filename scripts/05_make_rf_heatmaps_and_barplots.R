@@ -1,4 +1,7 @@
 #Make relative fitness heatmaps
+
+#NOTES
+#values = c("#D9027D", 'black', 'blue'))
 #T suggests using complex heatmaps package
 #get packages and data
 source('scripts/load_required_packages.R')
@@ -68,7 +71,7 @@ p.heat.spf
 p.heat.dtb
 p.heat.ln
 
-#comheatlegend = get_legend(p.heat.tsc, position='right')
+comheatlegend = get_legend(p.heat.tsc, position='right')
 
 p.heat.5traits <- ggarrange(p.heat.tsc, p.heat.sn, p.heat.spf, p.heat.ln, p.heat.dtb,
                          nrow=1, 
@@ -78,8 +81,5 @@ p.heat.5traits <- ggarrange(p.heat.tsc, p.heat.sn, p.heat.spf, p.heat.ln, p.heat
 
 p.heat.5traits
 #TODO
-#add significance (boxes?)
+#make boxes prettier
 #gene name version
-
-#NOTES
-#values = c("#D9027D", 'black', 'blue'))

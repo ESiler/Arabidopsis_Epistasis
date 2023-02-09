@@ -5,109 +5,72 @@ load("rdata/03_workspace.RData")
 # should be a total of 8 figs as currently requested
 #tsc, ln, dtb, and spf with and without edge effects. 
 #But exps with flat effect need to be modeled separately 
+max <- max(r.df.all_results$upperCI)
+min <- min(r.df.all_results$lowerCI)
+nsets <- nrow(r.df.tsc)
+forbreaks <- 1:nsets
 
-
+no_y_axis_theme <- function() {
+  theme(axis.title.y = element_blank(),
+        axis.text.y.left = element_blank(),
+        axis.ticks.y = element_blank(),
+        axis.line.y = element_blank() 
+    
+  )
+}
 # Make forest plots ----
 
 # plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
 # Returns a ggplot plot
 plot_epi_forest <- function(epi_data, main="Title") {
-  plot <- ggplot(epi_data, aes(y = row, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+  plot <- ggplot(epi_data, aes(y = rev(Order), x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
     geom_vline(xintercept = 0, color = "black", cex = .5) +
-    scale_y_continuous(name = "Gene Pair", 
-                       breaks=1:dim(epi_data)[1], 
-                       labels = epi_data$Set, 
-                       trans = "reverse", 
-                       expand = c(0,0.5)) +
     ggtitle(main) +
     xlab("Epistasis Value [95% CI]") +
+    xlim(-1, 0.6) +
+    scale_y_continuous(breaks=forbreaks, labels = mut_name_order, expand=c(.01,.01)) +
+    ylab("Gene Pair") +
     scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+  
     theme_bw() +
     theme(panel.border = element_blank(),
           panel.background = element_blank(),
           panel.grid.major = element_blank(), 
           panel.grid.minor = element_blank(), 
+          plot.title = element_text(hjust = 0.5),
           axis.line = element_line(colour = "black"),
-          axis.text.y.left = element_text(size = 10, colour = "black"),
+          axis.text.y.left = element_text(size = 9, colour = "black"),
           axis.text.y = element_text(size = 12, colour = "black"),
           axis.text.x.bottom = element_text(size = 10, colour = "black"),
           axis.title.x = element_text(size = 12, colour = "black"))
   plot
 }
-
-
-
 plot_epi_forest(r.df.tsc, main="Epistasis: Total Seed Count")
-plot_epi_forest(r.df.dtb, main="Epistasis: Days to Bolt")
-plot_epi_forest(r.df.ln, main="Epistasis: Leaf Number")
-plot_epi_forest(r.df.sn, main="Epistasis: Silique Number")
-plot_epi_forest(r.df.spf, main="Epistasis: Seed per Fruit")
+
+fp.tsc <- plot_epi_forest(r.df.tsc, main="Total Seed Count")
+fp.dtb <- plot_epi_forest(r.df.dtb, main="Days to Bolt")
+fp.ln <- plot_epi_forest(r.df.ln, main="Leaf Number")
+fp.sn <- plot_epi_forest(r.df.sn, main="Silique Number")
+fp.spf <- plot_epi_forest(r.df.spf, main="Seed per Fruit")
+
+big_forest_plot <- ggarrange(fp.tsc, 
+          fp.sn + no_y_axis_theme(),
+          fp.spf + no_y_axis_theme(), 
+          fp.dtb + no_y_axis_theme(), 
+          fp.ln + no_y_axis_theme(), 
+          widths = c(1.7,1,1,1,1),
+          nrow = 1, 
+          legend='right',
+          common.legend=T)
+
+annotate_figure(big_forest_plot, 
+                top = text_grob("Epistasis", size=16))
+fp.tsc
+fp.dtb
+fp.ln
+fp.spf
+fp.sn
 
 
-
-'''
-#TSC results not edgy
-efp_tsc <- forest_plot_delux(f.tsc.f, f.tsc, "Epistasis | Total Seed Count | No Edge Effects")
-
-#TSC results edgy
-efp_tsc_e <- forest_plot_delux(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects")
-
-#DTB results not edgy
-efp_dtb <- forest_plot_delux(f.dtb.f, f.dtb, "Epistasis | Days To Bolt | No Edge Effects")
-
-#DTB results edgy
-efp_dtb_e <- forest_plot_delux(f.dtb.ef, f.dtb.e, "Epistasis | Days To Bolt | With Edge Effects")
-
-#LN results not edgy
-efp_ln <- forest_plot_delux(f.ln.f, f.ln, "Epistasis | Leaf Number | No Edge Effects")
-
-#LN results edgy
-efp_ln_e <- forest_plot_delux(f.ln.ef, f.ln.e, "Epistasis | Leaf Number | With Edge Effects")
-
-#SPF results not edgy
-efp_spf <- forest_plot_delux(f.spf.f, f.spf, "Epistasis | Seeds Per Fruit | No Edge Effects")
-
-#SPF results edgy
-efp_spf_e <- forest_plot_delux(f.spf.ef, f.spf.e, "Epistasis | Seeds Per Fruit | With Edge Effects")
-'''
-## Multiplots THE BIG PIG!~~~~
-
-#ggarrange(efp_tsc, efp_tsc_e, nrow=1, legend='right',common.legend = TRUE)
-#ggarrange(efp_dtb, efp_dtb_e, nrow=1, legend='right',common.legend = TRUE)
-#ggarrange(efp_ln, efp_ln_e, nrow=1, legend='right',common.legend = TRUE)
-#ggarrange(efp_spf, efp_spf_e, nrow=1, legend='right',common.legend = TRUE)
-# Use models w no edge effects. Edge effects -> supplement
-
-## Create Forest Plots W Gene Names That Compare Different Fitness Values ----
-ggarrange(efp_tsc_e, efp_dtb_e, efp_ln_e, efp_spf_e,nrow=1,legend='right',common.legend=T)
-
-#Step 1: Get Y scale from efp_tcs_e
-#hack to extract y axis order
-forest_plot_delux_axishack <- function(f1_flats, f2_notflats, main="Title"){
-  df_f <- get_epistasis_for_formula(sets_with_flats, f1_flats)
-  df_wof <- get_epistasis_for_formula(sets_without_flats, f2_notflats)
-  df2 <- rbind(df_f, df_wof)
-  df2 <- arrange(df2, e_est)
-  df2['row'] <- (1:(dim(df2)[1]))
-  return(df2$Set)
-}
-common_y_axis <- (forest_plot_delux_axishack(f.tsc.ef, f.tsc.e, "Epistasis | Total Seed Count | With Edge Effects"))
-
-common_y_axisf <- as.factor(common_y_axis)
-#only changes lables, doesn't change y order
-#Does not work
-
-
-efp_dtb_eo <- efp_dtb_e + scale_y_continuous(name="help!",
-                                             breaks=1:length(common_y_axis),
-                                             limits = common_y_axisf,
-                                             labels = common_y_axis,
-)
-
-ggarrange(efp_dtb_e, efp_dtb_eo, efp_tsc_e, nrow=1)
-
-
-
-   
