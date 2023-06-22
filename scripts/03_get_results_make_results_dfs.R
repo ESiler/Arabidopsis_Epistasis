@@ -75,16 +75,17 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
 
 
 
-
-
 #Make results DF with both flat and non-flat plant sets
 get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   df.r.f <- get_epistasis_for_formula(sets_with_flats, formula.f, dummymatrix.f, data)
   df.r <- get_epistasis_for_formula(sets_without_flats, formula, dummymatrix, data)                                  
   df.r.all <- arrange(rbind(df.r.f, df.r), e_est)
-  df.r.all$row <- as.numeric(row.names(r.df.tsc))
+  df.r.all$row <- as.numeric(row.names(r.df.tsc)) #WHY DID I WRITE THIS RECURSED FUNCTION!?!?!
+  #To make this work you have to comment out the above line, make r.df.tsc, and then uncomment it and run it again
+  #IDK what I did should probably be fixed
   return(df.r.all)
-  }
+}
+
 r.df.tsc <- get_r.df(f.tsc.f, f.tsc, df_pred_dummy.f, df_pred_dummy)
 
 
@@ -130,6 +131,6 @@ r.df.all_results$trait <- as.factor(r.df.all_results$trait)
 #Save variables etc for import into next script:
 #uncomment to overwrite
 #save.image(file = "rdata/03_workspace.RData")
-stupidlm = lm(1 ~ 1)
-summary(stupidlm)
+#stupidlm = lm(1 ~ 1)
+#summary(stupidlm)
 

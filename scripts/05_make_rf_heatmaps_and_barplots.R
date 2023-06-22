@@ -42,10 +42,10 @@ plot_heatmap <- function(data, trait="trait"){
     scale_fill_gradient2(low = "blue", mid = "white", high = "#D9027D", midpoint = 1) +
     geom_tile() +
     # Add outline via a geom_rect
-    geom_tile(
-      data = subset(data, sig == TRUE),
-      aes(), fill = NA, color = "#707070", size = .5
-    ) +
+    #geom_tile(
+    #  data = subset(data, sig == TRUE),
+    #  aes(), fill = NA, color = "#707070", size = .5
+    #) +
     scale_x_discrete(labels=c('geneA', 'geneB', 'double.mutant')) +
     scale_y_discrete(limits = rev(factor(set.order))) +
     xlab('Mutation') +

@@ -2,12 +2,7 @@
 source("scripts/load_required_packages.R")
 
 ## 2. Load data ----
-#NOTE: if you change this, go down and un-remove set 845 
-data = read.delim("data/Fitness_data_83_sets_24Jan2023.txt", sep = "\t", header = T)
-
-#remove set 845 because it currently has incomplete data
-data <- data %>% filter(Set!='845')
-
+data = read.delim("data/FITNESS_DATA_06122023_100sets.csv", sep = ",", header = T)
 
 ## 3. Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
@@ -32,7 +27,7 @@ level_2r <- which(levels(data$Set) == '2r')
 levels(data$Set)[level_2r] <- 2222
 
 #Load in manual gene name data.
-genenamekey <- read.csv('data/genenamekey_cleaned.csv', header = T)
+genenamekey <- read.csv('data/gene_name_key.csv', header = T)
 genenamekey <- select(genenamekey, -1)
 tail(genenamekey)
 
