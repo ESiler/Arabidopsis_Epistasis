@@ -44,37 +44,36 @@ f.sn.f <- formula(log10(SN) ~ MA + MB + DM + Flat)
 f.sn.ef <- formula(log10(SN) ~ MA + MB + DM + Type + Flat)
 
 #Make a collection of dummy dataframes to make prediction w models
-df_pred_dummy <- data.frame(MA  = c(0,1,0,1),
-                            MB = c(0,0,1,1),
-                            DM = c(0,0,0,1)
+## Adding "additive fitness" with effects of A and B but not epistasis
+df_pred_dummy <- data.frame(MA  = c(0,1,0,1,1),
+                            MB = c(0,0,1,1,1),
+                            DM = c(0,0,0,1,0)
 )
-rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM")
+rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM","AF")
 
-df_pred_dummy.e <- data.frame(MA  = c(0,1,0,1),
-                              MB = c(0,0,1,1),
-                              DM = c(0,0,0,1),
-                              Type = c("INSIDE","INSIDE","INSIDE","INSIDE")
+df_pred_dummy.e <- data.frame(MA  = c(0,1,0,1,1),
+                              MB = c(0,0,1,1,1),
+                              DM = c(0,0,0,1,0),
+                              Type = c("INSIDE","INSIDE","INSIDE","INSIDE","INSIDE")
 )
-rownames(df_pred_dummy.e) = c("WT", "MA", "MB", "DM")
+rownames(df_pred_dummy.e) = c("WT", "MA", "MB", "DM", "AF")
 
-df_pred_dummy.f <- data.frame(MA  = c(0,1,0,1),
-                              MB = c(0,0,1,1),
-                              DM = c(0,0,0,1),
-                              Flat = c('1','1','1','1')
+df_pred_dummy.f <- data.frame(MA  = c(0,1,0,1,1),
+                              MB = c(0,0,1,1,1),
+                              DM = c(0,0,0,1,0),
+                              Flat = c('1','1','1','1','1')
 )
 
-rownames(df_pred_dummy.f) = c("WT", "MA", "MB", "DM")
+rownames(df_pred_dummy.f) = c("WT", "MA", "MB", "DM","AF")
 
 
-rownames(df_pred_dummy) = c("WT", "MA", "MB", "DM")
-
-df_pred_dummy.ef <- data.frame(MA  = c(0,1,0,1),
-                               MB = c(0,0,1,1),
-                               DM = c(0,0,0,1),
-                               Type = c("INSIDE","INSIDE","INSIDE","INSIDE"),
-                               Flat = c('1','1','1','1')
+df_pred_dummy.ef <- data.frame(MA  = c(0,1,0,1,1),
+                               MB = c(0,0,1,1,1),
+                               DM = c(0,0,0,1,0),
+                               Type = c("INSIDE","INSIDE","INSIDE","INSIDE","INSIDE"),
+                               Flat = c('1','1','1','1','1')
 )
-rownames(df_pred_dummy.ef) = c("WT", "MA", "MB", "DM")
+rownames(df_pred_dummy.ef) = c("WT", "MA", "MB", "DM", "AF")
 
 save.image(file = "rdata/02_workspace.RData")
 

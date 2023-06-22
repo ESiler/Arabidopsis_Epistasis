@@ -16,9 +16,8 @@ get_epi_stats <- function(plantset, formula, df_pred, df){
   rsquared <- summary(model)$adj.r.squared
   pval_e <- as.numeric(summary(model)$coefficients[,4]['DM'])
   
-  pred_fit = predict(model, df_pred, interval="confidence") 
+  pred_fit = predict(model, df_pred, interval="confidence")
   pred_rel_fit = pred_fit/pred_fit[1,1]
-  
   pvals <- summary(model)$coefficients[,4][1:4]
   #Return stats
   result <- c(plantset, e_est, lowerCI, upperCI, rsquared, pval_e, pred_rel_fit, pvals)
@@ -26,7 +25,7 @@ get_epi_stats <- function(plantset, formula, df_pred, df){
   return(result)
 }
 
-tmp <- get_epi_stats(5, f.tsc.f, df_pred_dummy.f, data) #Need to make dummy frame flexible based on model
+tmp <- get_epi_stats(5, f.tsc.f, df_pred_dummy.f, data)
 tmp
 length(tmp)
 
@@ -47,9 +46,9 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
     resultlist[[i]] <- as.numeric(v)
   }
   these_rownames =  c('Set', 'e_est', 'lowerCI', 'upperCI', 'rsquared', 'pval_e', 
-                      'WT_w', 'MA_w', 'MB_w', 'DM_w', 
-                      'WT_w_lci', 'MA_w_lci', 'MB_w_lci', 'DM_w_lci', 
-                      'WT_w_uci', 'MA_w_uci', 'MB_w_uci', 'DM_w_uci',
+                      'WT_w', 'MA_w', 'MB_w', 'DM_w', 'AF_w',
+                      'WT_w_lci', 'MA_w_lci', 'MB_w_lci', 'DM_w_lci', "AF_w_lci",
+                      'WT_w_uci', 'MA_w_uci', 'MB_w_uci', 'DM_w_uci', "AF_w_uci",
                       'pval_int', 'pval_MA', 'pval_MB', 'pval_DM')
   #QC: All sets must actually have enough data to have the full amount of results
   resultlist = resultlist[lengths(resultlist) == length(these_rownames)]
@@ -130,7 +129,7 @@ r.df.all_results$trait <- as.factor(r.df.all_results$trait)
 
 #Save variables etc for import into next script:
 #uncomment to overwrite
-save.image(file = "rdata/03_workspace.RData")
-
-
+#save.image(file = "rdata/03_workspace.RData")
+stupidlm = lm(1 ~ 1)
+summary(stupidlm)
 

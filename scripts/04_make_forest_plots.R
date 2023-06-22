@@ -30,9 +30,9 @@ plot_epi_forest <- function(epi_data, main="Title") {
     ggtitle(main) +
     xlab("Epistasis Value [95% CI]") +
     xlim(-1, 0.6) +
-    scale_y_continuous(breaks=forbreaks, labels = mut_name_order, expand=c(.01,.01)) +
+    scale_y_continuous(breaks=forbreaks, labels = rev(mut_name_order), expand=c(.01,.01)) +
     ylab("Gene Pair") +
-    scale_color_manual('Epistasis\nDirection',values = c("#D9027D", 'black', 'blue')) +
+    scale_color_manual('Epistasis\nDirection',values = c('blue', 'black', "#D9027D")) +
   
     theme_bw() +
     theme(panel.border = element_blank(),
