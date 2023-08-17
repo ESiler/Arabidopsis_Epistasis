@@ -33,3 +33,32 @@ effect_comp_df <- df[, c(1, (ncol(df) - 6):ncol(df))]
 effect_comp_df <- effect_comp_df %>% arrange(trait, A_vs_WT, B_vs_WT, AB_vs_WT, AB_vs_A, AB_vs_B, A_vs_B)
 head(effect_comp_df)
 
+#Shows number of effect combinations
+effect_comp_df %>%
+  select(3:8) %>%
+  distinct() %>%
+  nrow()
+
+##Top groups by number rows
+top_combinations <- effect_comp_df %>%
+  group_by_at(vars(3:8)) %>%
+  summarise(num_rows = n()) %>%
+  arrange(desc(num_rows)) %>%
+  head(20)
+
+top_combinations$proportion = 
+
+print(top_combinations)
+
+##Top groups by proportion
+total_rows <- nrow(effect_comp_df)
+
+top_combinations <- effect_comp_df %>%
+  group_by_at(vars(3:8)) %>%
+  summarise(num_rows = n()) %>%
+  arrange(desc(num_rows)) %>%
+  head(20) %>%
+  mutate(proportion = num_rows / total_rows)
+
+print(top_combinations)
+#!!! More than 2/3 showed no effects!
