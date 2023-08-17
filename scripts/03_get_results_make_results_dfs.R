@@ -73,8 +73,8 @@ get_epistasis_for_formula <- function(plantsets, formula, df_pred, df) {
 #Create results DFs for each fitness phenotype: ----
 #TSC, DTB, LN, Silique Number, Seeds per Fruit
 
-
-
+print("The below function is CURSED!!! Please see comments. It will only work if you comment out a line, run it, uncomment it, then run it again.")
+#### WARNING!!! CURSED FUNCTION!!! SEE COMMENTS!!!
 #Make results DF with both flat and non-flat plant sets
 get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   df.r.f <- get_epistasis_for_formula(sets_with_flats, formula.f, dummymatrix.f, data)
@@ -82,7 +82,7 @@ get_r.df <- function(formula.f, formula, dummymatrix.f, dummymatrix, df=data){
   df.r.all <- arrange(rbind(df.r.f, df.r), e_est)
   df.r.all$row <- as.numeric(row.names(r.df.tsc)) #WHY DID I WRITE THIS RECURSED FUNCTION!?!?!
   #To make this work you have to comment out the above line, make r.df.tsc, and then uncomment it and run it again
-  #IDK what I did should probably be fixed
+  #Note: Fix this
   return(df.r.all)
 }
 
@@ -125,12 +125,10 @@ r.df.all_results <- bind_rows((r.df.tsc %>% mutate(trait = "total_seed_count")),
 
 r.df.all_results$trait <- as.factor(r.df.all_results$trait)
 
-#Write DF -- uncomment to overwrite results csv
+#Write DF -- uncomment to overwrite results csv:
 #write.csv(r.df.all_results, file = "results/data/all_results_data.csv")
 
 #Save variables etc for import into next script:
-#uncomment to overwrite
+#uncomment to overwrite:
 #save.image(file = "rdata/03_workspace.RData")
-#stupidlm = lm(1 ~ 1)
-#summary(stupidlm)
 

@@ -22,14 +22,18 @@ levels(data$Type) <- c('INSIDE', 'BORDER')
 data$logTSC <- log10(data$TSC)
 data <- subset(data, is.finite(data$logTSC)) #remove nans
 
+#Load in manual gene name data
+##Label Duplicates
+genenamekey <- read.csv('data/gene_name_key.csv', header = T)
+genenamekey <- select(genenamekey, -1)
+genenamekey$duplicate <- duplicated(genenamekey[, c('MA', 'MB')])
+# Duplicate sets: 704  705  827 2222
+
 #In Sets, change 2r to 2222 (it is a repeat of exp 2)
 level_2r <- which(levels(data$Set) == '2r')
 levels(data$Set)[level_2r] <- 2222
 
-#Load in manual gene name data.
-genenamekey <- read.csv('data/gene_name_key.csv', header = T)
-genenamekey <- select(genenamekey, -1)
-tail(genenamekey)
+#
 
 #Convert sets to integer to merge w genenamekey dataset
 data$Set_int <- as.integer(as.character(data$Set))
@@ -47,11 +51,20 @@ data <- rename(data, MA = MA.x, MB = MB.x)
 factor_cols_2 <- c('locusA', 'locusB', 'ma', 'mb', 'ma2', 'mb2', 'mutant_name')
 data <- data %>% mutate_at(factor_cols_2, as.factor)
 
+#separate duplicate gene pairs
+data = subset(data, data$duplicate==FALSE)
+duplicates_data = subset(data, data$duplicate==TRUE)
 
-str(data)
-
+data <- data %>% select(-duplicate)
+data$Set <- droplevels(data$Set)
+duplicates_data <- duplicates_data %>% select(-duplicate)
+duplicates_data$Set <- droplevels(duplicates_data$Set)
+#str(data)
 rm(dataj)
 #Save processed data :-) 
 
 #uncomment to overwrite
 #saveRDS(data, file = "rdata/01_data.rds")
+
+##dev area
+

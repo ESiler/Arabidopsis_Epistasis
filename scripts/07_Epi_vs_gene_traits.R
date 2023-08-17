@@ -24,6 +24,7 @@ epi_vs_medexp_plt = ggplot(data=df, aes(x=log10(med_exp_ratio_A.B), y=e_est, col
   theme_classic() +
   ylab("Epistasis Value (e)") 
 
+
 epi_vs_maxexp_plt = ggplot(data=df, aes(x=log10(max_exp_ratio_A.B), y=e_est, color=trait)) + 
   geom_point(alpha=.33, size=7) + 
   xlab('Gene expression ratio (log of maximum expression level)') +
@@ -43,4 +44,8 @@ epi_vs_kaks_plt = ggplot(data=df, aes(x=ka_ks_evolve_rate_B, y=e_est, color=trai
   theme_classic()
 
 
-
+epi_vs_famsize_plt
+epi_vs_medexp_plt
+epi_vs_maxexp_plt
+epi_vs_kssim_plt
+epi_vs_kaks_plt
