@@ -28,7 +28,7 @@ df <- df %>% mutate(AB_vs_B = get_effect(DM_w_lci, DM_w_uci, MB_w_lci, MB_w_uci)
 df <- df %>% mutate(A_vs_B = get_effect(MA_w_lci, MA_w_uci, MB_w_lci, MB_w_uci))
 
 #Make effect comparison dataframe
-effect_comp_df <- df[, c(1, (ncol(df) - 6):ncol(df))]
+effect_comp_df <- df[, c(1, (ncol(df) - 9):ncol(df))]
 
 effect_comp_df <- effect_comp_df %>% arrange(trait, A_vs_WT, B_vs_WT, AB_vs_WT, AB_vs_A, AB_vs_B, A_vs_B)
 head(effect_comp_df)
@@ -46,7 +46,6 @@ top_combinations <- effect_comp_df %>%
   arrange(desc(num_rows)) %>%
   head(20)
 
-top_combinations$proportion = 
 
 print(top_combinations)
 
@@ -62,3 +61,31 @@ top_combinations <- effect_comp_df %>%
 
 print(top_combinations)
 #!!! More than 2/3 showed no effects!
+
+traitlist = c('total_seed_count', 'silique_number', 'seeds_per_fruit', 'leaf_number', 'days_to_bolt')
+comp_order = c('AB_vs_WT', 'A_vs_WT', 'B_vs_WT', 'AB_vs_A', 'AB_vs_B', 'A_vs_B')
+#Visualize data so we can see what the patterns are
+
+make_heatmap2 <- function(df){
+  hm_df = df %>% pivot_longer(
+    cols = 6:11,
+    names_to = "comparison",
+    values_to = "effect",
+  )
+
+  plot = ggplot(hm_df, aes(x=factor(comparison, levels = comp_order), 
+                           y=factor(Set, levels = rev(set.order)), 
+                           fill=factor(effect),
+                           alpha = Epistasis_Direction,
+                           color = )) +
+    
+    geom_tile() +
+    theme_classic() +
+    theme(axis.text.x = element_text(angle = 45, vjust=.6)) + 
+    scale_fill_discrete(type = c('magenta', 'grey', 'blue'))
+  plot = plot + facet_wrap(. ~ factor(trait, levels=traitlist), nrow=1)
+  return(plot)
+}
+
+make_heatmap2(effect_comp_df)
+
