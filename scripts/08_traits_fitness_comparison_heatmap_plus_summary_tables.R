@@ -89,7 +89,7 @@ make_heatmap2 <- function(df){
                         guide = guide_legend(title="Effect")) +
     scale_alpha_manual(values = c(1,0.4,1)) +
     labs(x = "Comparison", y='Gene Pair') + 
-    #scale_y_discrete(labels = df$mutant_name) +
+    scale_y_discrete(labels = rev(mut_name_order)) +
     facet_wrap(. ~ factor(trait, levels=traitlist), nrow=1)
   return(plot)
 }
