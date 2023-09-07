@@ -73,12 +73,12 @@ make_heatmap2 <- function(df){
     cols = 6:11,
     names_to = "comparison",
     values_to = "effect",
-  )
+  ) #There is something wrong with the data.
 
   plot = ggplot(hm_df, aes(x=factor(comparison, levels = comp_order), 
                            y=factor(Set, levels = rev(set.order)), 
                            fill=factor(effect, labels = c("Lower", "n.s.", "Higher")),
-                           alpha = Epistasis_Direction)) +
+                           alpha = Epistasis_Direction)) + 
     
     geom_tile() +
     theme_classic() +
@@ -89,7 +89,7 @@ make_heatmap2 <- function(df){
                         guide = guide_legend(title="Effect")) +
     scale_alpha_manual(values = c(1,0.4,1)) +
     labs(x = "Comparison", y='Gene Pair') + 
-    scale_y_discrete(labels = df$mutant_name) +
+    #scale_y_discrete(labels = df$mutant_name) +
     facet_wrap(. ~ factor(trait, levels=traitlist), nrow=1)
   return(plot)
 }
