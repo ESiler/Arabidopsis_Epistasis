@@ -1,6 +1,6 @@
-Arabidopsis Epistasis Project
-Eleanor Siler
-1 Feb 2023
+Readme revised 9 May 2024
+Hi Melissa and Brianna!!!
 
-1. Open Arabidopsis_Fitness_Epistais.Rproj
+If you want to run any code please open the .Rproj file in rstudio first and open scripts from there.
+
 
