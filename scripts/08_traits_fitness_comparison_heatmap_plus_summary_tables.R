@@ -1,6 +1,8 @@
 source('scripts/load_required_packages.R')
 load("rdata/03_workspace.RData")
 
+## A couple things in here (eg heatmap, etc) are still broken
+
 df = r.df.all_results
 #Add six columns: AvsWT, BvsWT, ABvsWT, ABvsA, ABvsB, BvsA 
 #For each column and each row it should tell you if the fitness is higher (1), lower (-1), or nonsignificant(0)

@@ -20,20 +20,25 @@ no_y_axis_theme <- function() {
 }
 # Make forest plots ----
 
-# plot_epi_forest: This function makes a rad epistasis forest plot for all the genes. Woohoo!
+# plot_epi_forest: This function makes a epistasis forest plots for all the genes. 
 # Returns a ggplot plot
 plot_epi_forest <- function(epi_data, main="Title") {
-  plot <- ggplot(epi_data, aes(y = rev(Order), x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
+  
+  epi_data$mutant_rank = match(epi_data$mutant_name, mutant_order)
+  
+  plot <- ggplot(epi_data, aes(y = mutant_rank, x = e_est, color=Epistasis_Direction, ymin=1, ymax=dim(epi_data)[1])) +
     geom_point(shape = 18, size = 3) +  
     geom_errorbarh(aes(xmin = lowerCI, xmax = upperCI), height = 0.5) +
     geom_vline(xintercept = 0, color = "black", cex = .5) +
     ggtitle(main) +
     xlab("Epistasis Value [95% CI]") +
     xlim(-1, 0.6) +
-    scale_y_continuous(breaks=forbreaks, labels = rev(mut_name_order), expand=c(.01,.01)) +
-    ylab("Gene Pair") +
+    scale_y_continuous(name="Gene Pair",
+                       breaks = 1:length(mutant_order), 
+                       labels = rev(mutant_order),
+                       expand=c(.01,.01))+
     scale_color_manual('Epistasis\nDirection',values = c('blue', 'black', "#D9027D")) +
-  
+    
     theme_bw() +
     theme(panel.border = element_blank(),
           panel.background = element_blank(),
@@ -47,7 +52,6 @@ plot_epi_forest <- function(epi_data, main="Title") {
           axis.title.x = element_text(size = 12, colour = "black"))
   plot
 }
-plot_epi_forest(r.df.tsc, main="Epistasis: Total Seed Count")
 
 fp.tsc <- plot_epi_forest(r.df.tsc, main="Total Seed Count")
 fp.dtb <- plot_epi_forest(r.df.dtb, main="Days to Bolt")
@@ -67,10 +71,4 @@ big_forest_plot <- ggarrange(fp.tsc,
 
 annotate_figure(big_forest_plot, 
                 top = text_grob("Epistasis", size=16))
-fp.tsc
-fp.dtb
-fp.ln
-fp.spf
-fp.sn
-
-
+big_forest_plot

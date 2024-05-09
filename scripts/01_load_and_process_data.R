@@ -2,9 +2,9 @@
 source("scripts/load_required_packages.R")
 
 ## 2. Load data ----
-data = read.delim("data/FITNESS_DATA_06122023_100sets.csv", sep = ",", header = T)
+data = read.delim("data/double_mutant_fitness_data_05032024.txt",header = T)
 
-## 3. Format data for analysis ----
+data## 3. Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
 factor_cols <- c('Set', 'Flat', 'Row', 'Type', 'Genotype', 'MA', 'MB', 'Subline')
 

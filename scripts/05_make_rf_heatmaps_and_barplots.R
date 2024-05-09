@@ -1,68 +1,47 @@
 #Make relative fitness heatmaps
 
-#NOTES
-#values = c("#D9027D", 'black', 'blue'))
-#T suggests using complex heatmaps package
 #get packages and data
 source('scripts/load_required_packages.R')
 load("rdata/03_workspace.RData")
 
 
 #1: Relative Fitness Heatmap
-head(r.df.tsc)
-#Get results in long format
-
-data_hm_tmp <- cbind(r.df.tsc[c(1,2,23,24,25)], stack(r.df.tsc[c(8:10)]))
-data_hm_tmp <- cbind(data_hm_tmp, stack(r.df.tsc[20:22]))
-data_hm_tmp$Set <- as.factor(data_hm_tmp$Set)
-colnames(data_hm_tmp)[8] <- 'p-val'
-colnames(data_hm_tmp)[6] <- 'rel_fitness'
-
-head(data_hm_tmp)
-
-#function that converts desired data to long format:
-#YOU ARE HERE ----
-get_heat_data <- function(rdf){
-  data_hm <- cbind(rdf[c(1,2,23,24,25)], stack(rdf[8:10]))
-  data_hm <- cbind(data_hm, stack(rdf[20:22]))
-  data_hm$Set <- as.factor(data_hm$Set)
-  colnames(data_hm)[8] <- 'pval'
-  colnames(data_hm)[9] <- 'sig'
-  colnames(data_hm)[6] <- 'rel_fitness'
-  data_hm$sig <- (data_hm$pval < .05)
-  return(data_hm)
-}
-heat.data.tsc <- get_heat_data(r.df.tsc)
-tail(heat.data.tsc)
-
-#Function that makes a ggplot of given data:
-plot_heatmap <- function(data, trait="trait"){
-  #ggplot blah blah blah
-  ggplot(data, aes(ind, Set, fill=rel_fitness)) +
+make_heatmap <- function(r.df, trait = 'title') {
+  df <- pivot_longer(r.df, cols = c(MA_w, MB_w, DM_w), names_to = "mutant_type", values_to = 'rel_fitness')
+  df$mutant_rank <- match(df$mutant_name, mutant_order)
+  
+  p <- ggplot(df, aes(mutant_type, mutant_rank, fill = rel_fitness)) +
     scale_fill_gradient2(low = "blue", mid = "white", high = "#D9027D", midpoint = 1) +
     geom_tile() +
-    # Add outline via a geom_rect
-    #geom_tile(
-    #  data = subset(data, sig == TRUE),
-    #  aes(), fill = NA, color = "#707070", size = .5
-    #) +
-    scale_x_discrete(labels=c('geneA', 'geneB', 'double.mutant')) +
-    scale_y_discrete(limits = rev(factor(set.order))) +
-    xlab('Mutation') +
-    ylab('Set') +
+    scale_x_discrete(labels = c('geneA', 'geneB', 'double.mutant')) +
+    xlab('Mutant Type') +
     labs(fill = "Relative Fitness") +
-    ggtitle('Relative Fitness', subtitle=trait)
+    scale_y_continuous(name = "Gene Pair",
+                       breaks = 1:length(mutant_order), 
+                       labels = rev(mutant_order),
+                       expand = c(.01, .01)) +
+    ggtitle(trait) +
+    theme_bw() +
+      theme(panel.border = element_blank(),
+            panel.background = element_blank(),
+            panel.grid.major = element_blank(), 
+            panel.grid.minor = element_blank(), 
+            plot.title = element_text(hjust = 0.5),
+            axis.line = element_line(colour = "black"),
+            axis.text.y.left = element_text(size = 6, colour = "black"),
+            axis.text.y = element_text(size = 12, colour = "black"),
+            axis.text.x.bottom = element_text(size = 10, colour = "black"),
+            axis.title.x = element_text(size = 12, colour = "black"))
+  
+  return(p)
 }
-p.heat.tsc <- r.df.tsc %>% get_heat_data() %>% plot_heatmap(trait="Total Seed Number")
-p.heat.tsc
 
 
-p.heat.sn <- r.df.sn %>% get_heat_data() %>% plot_heatmap(trait="Silique Number")
-p.heat.spf <- r.df.spf %>% get_heat_data() %>% plot_heatmap(trait="Seeds per Fruit")
-p.heat.dtb <- r.df.dtb %>% get_heat_data() %>% plot_heatmap(trait="Days to Bolt")
-p.heat.ln <- r.df.ln %>% get_heat_data() %>% plot_heatmap(trait="Leaf Number")
-
-
+p.heat.tsc <- make_heatmap(r.df.tsc, trait="Total Seed Number")
+p.heat.sn <- make_heatmap(r.df.sn, trait="Silique Number")
+p.heat.spf <- make_heatmap(r.df.spf, trait="Seeds per Fruit")
+p.heat.dtb <- make_heatmap(r.df.dtb, trait="Days to Bolt")
+p.heat.ln <- make_heatmap(r.df.ln, trait="Leaf Number")
 
 
 p.heat.tsc
@@ -70,17 +49,3 @@ p.heat.sn
 p.heat.spf
 p.heat.dtb
 p.heat.ln
-
-comheatlegend = get_legend(p.heat.tsc, position='right')
-
-p.heat.5traits <- ggarrange(p.heat.tsc, p.heat.sn, p.heat.spf, p.heat.ln, p.heat.dtb,
-                         nrow=1, 
-                         legend='right',
-                         legend.grob=comheatlegend)
-
-
-p.heat.5traits
-#TODO
-#make boxes prettier
-#gene name version
-
