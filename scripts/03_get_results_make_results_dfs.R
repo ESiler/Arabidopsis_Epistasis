@@ -2,7 +2,6 @@
 source('scripts/load_required_packages.R')
 load("rdata/02_workspace.RData")
 
-
 #1. Get_epi_stats. Gets epistasis values for plant set. 
 # Returns a vector of relevant values
 
@@ -33,9 +32,11 @@ get_epi_stats <- function(plantset, formula, df_pred, df){
   return(result)
 }
 
+#check if everything is working ok:
 tmp <- get_epi_stats(5, f.tsc.f, df_pred_dummy.f, data)
 tmp
 length(tmp)
+
 
 resultlist <- list()
 for (i in sets_with_flats){
@@ -130,11 +131,11 @@ r.df.all_results$mutant_name <- factor(r.df.all_results$mutant_name, levels = mu
 #Create a mutant rank column 
 r.df.all_results$mutant_rank = match(r.df.all_results$mutant_name, mutant_order)
 
-#Write results dataframe to csv -- uncomment to overwrite results csv:
-#last saved 9may2024
-#write.csv(r.df.all_results, file = "results/data/all_results_data_May2024.csv")
+# Write results dataframe to csv -- uncomment to overwrite results csv:
+# last saved 3Apr2025
+write.csv(r.df.all_results, file = "results/data/all_results_data_3APR2025.csv")
 
 #Save variables etc for import into next script:
 #last saved 9may2024
 # un-comment to overwrite:
-#save.image(file = "rdata/03_workspace.RData")
+save.image(file = "rdata/03_workspace.RData")

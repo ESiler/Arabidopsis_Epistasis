@@ -13,35 +13,35 @@ sets_without_flats <- setlist[!(setlist %in% sets_with_flats)]
 ## 4. Generate Model Formulas ----
 
 #Total seed count
-f.tsc <- formula(logTSC ~ MA + MB + DM )
-f.tsc.e <- formula(logTSC ~ MA + MB + DM + Type)
-f.tsc.f <- formula(logTSC ~ MA + MB + DM + Flat)
-f.tsc.ef <- formula(logTSC ~ MA + MB + DM + Type + Flat)
+f.tsc <- formula(log10(TSC+1) ~ MA + MB + DM )
+f.tsc.e <- formula(log10(TSC+1) ~ MA + MB + DM + Type)
+f.tsc.f <- formula(log10(TSC+1) ~ MA + MB + DM + Flat)
+f.tsc.ef <- formula(log10(TSC+1) ~ MA + MB + DM + Type + Flat)
 tsc_formulas <- c(f.tsc, f.tsc.e, f.tsc.f, f.tsc.ef)
 
 #Leaf number
-f.ln <- formula(log10(LN) ~ MA + MB + DM)
-f.ln.e <- formula(log10(LN) ~ MA + MB + DM + Type)
-f.ln.f <- formula(log10(LN) ~ MA + MB + DM + Flat)
-f.ln.ef <- formula(log10(LN) ~ MA + MB + DM + Type + Flat)
+f.ln <- formula(log10(LN+1) ~ MA + MB + DM)
+f.ln.e <- formula(log10(LN+1) ~ MA + MB + DM + Type)
+f.ln.f <- formula(log10(LN+1) ~ MA + MB + DM + Flat)
+f.ln.ef <- formula(log10(LN+1) ~ MA + MB + DM + Type + Flat)
 
 #Days to bolt
-f.dtb <- formula(log10(DTB) ~ MA + MB + DM)
-f.dtb.e <- formula(log10(DTB) ~ MA + MB + DM + Type)
-f.dtb.f <- formula(log10(DTB) ~ MA + MB + DM + Flat)
-f.dtb.ef <- formula(log10(DTB) ~ MA + MB + DM + Type + Flat)
+f.dtb <- formula(log10(DTB+1) ~ MA + MB + DM)
+f.dtb.e <- formula(log10(DTB+1) ~ MA + MB + DM + Type)
+f.dtb.f <- formula(log10(DTB+1) ~ MA + MB + DM + Flat)
+f.dtb.ef <- formula(log10(DTB+1) ~ MA + MB + DM + Type + Flat)
 
 #Seeds per fruit
-f.spf <- formula(log10(SPF) ~ MA + MB + DM)
-f.spf.e <- formula(log10(SPF) ~ MA + MB + DM + Type)
-f.spf.f <- formula(log10(SPF) ~ MA + MB + DM + Flat)
-f.spf.ef <- formula(log10(SPF) ~ MA + MB + DM + Type + Flat)
+f.spf <- formula(log10(SPF+1) ~ MA + MB + DM)
+f.spf.e <- formula(log10(SPF+1) ~ MA + MB + DM + Type)
+f.spf.f <- formula(log10(SPF+1) ~ MA + MB + DM + Flat)
+f.spf.ef <- formula(log10(SPF+1) ~ MA + MB + DM + Type + Flat)
 
 #Silique number
-f.sn <- formula(log10(SN) ~ MA + MB + DM)
-f.sn.e <- formula(log10(SN) ~ MA + MB + DM + Type)
-f.sn.f <- formula(log10(SN) ~ MA + MB + DM + Flat)
-f.sn.ef <- formula(log10(SN) ~ MA + MB + DM + Type + Flat)
+f.sn <- formula(log10(SN+1) ~ MA + MB + DM)
+f.sn.e <- formula(log10(SN+1) ~ MA + MB + DM + Type)
+f.sn.f <- formula(log10(SN+1) ~ MA + MB + DM + Flat)
+f.sn.ef <- formula(log10(SN+1) ~ MA + MB + DM + Type + Flat)
 
 #Make a collection of dummy dataframes to make prediction w models
 ## Adding "additive fitness" with effects of A and B but not epistasis

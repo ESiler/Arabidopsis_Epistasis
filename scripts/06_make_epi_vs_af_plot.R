@@ -17,8 +17,8 @@ ggplot(data=r.df.all_results,
   geom_abline(linetype=2, alpha=.33) +
   geom_vline(xintercept = 1, linetype=3, alpha = .33) +
   geom_hline(yintercept = 1, linetype=3, alpha = .33) +
-  xlab("Relative Fitness -- Additive -- Without Epistasis") +
-  ylab("Relative Fitness -- With Epistasis") +
+  xlab("Predicted Double Mutant Fitness Relative to Wildtype\nIf there was No Epistasis") +
+  ylab("Actual Double Mutant Fitness Relative to Wildtype") +
   theme_classic()
 
 ggplot(data=r.df.3seedtraits, 
@@ -31,8 +31,8 @@ ggplot(data=r.df.3seedtraits,
   geom_abline(linetype=2, alpha=.33) +
   geom_vline(xintercept = 1, linetype=3, alpha = .33) +
   geom_hline(yintercept = 1, linetype=3, alpha = .33) +
-  xlab("Relative Fitness -- Additive -- Without Epistasis") +
-  ylab("Relative Fitness -- With Epistasis") +
+  xlab("Predicted Double Mutant Fitness Relative to Wildtype\nIf there was No Epistasis") +
+  ylab("Actual Double Mutant Fitness Relative to Wildtype") +
   theme_classic()
 
 ggplot(data=r.df.2vegtraits, 
@@ -45,8 +45,8 @@ ggplot(data=r.df.2vegtraits,
   geom_abline(linetype=2, alpha=.33) +
   geom_vline(xintercept = 1, linetype=3, alpha = .33) +
   geom_hline(yintercept = 1, linetype=3, alpha = .33) +
-  xlab("Relative Fitness -- Additive -- Without Epistasis") +
-  ylab("Relative Fitness -- With Epistasis") +
+  xlab("Predicted Double Mutant Fitness Relative to Wildtype\nIf there was No Epistasis") +
+  ylab("Actual Double Mutant Fitness Relative to Wildtype") +
   theme_classic()
 
 

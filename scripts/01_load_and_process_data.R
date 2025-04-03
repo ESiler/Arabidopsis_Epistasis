@@ -2,9 +2,9 @@
 source("scripts/load_required_packages.R")
 
 ## 2. Load data ----
-data = read.delim("data/double_mutant_fitness_data_05032024.txt",header = T)
-
-data## 3. Format data for analysis ----
+data = read.delim("data/fitness_data_04032025_revES.csv",header = T, sep=",")
+head(data)
+## 3. Format data for analysis ----
 numeric_cols <- c('LN', 'WO', "SPF", 'TSC', 'SH')
 factor_cols <- c('Set', 'Flat', 'Row', 'Type', 'Genotype', 'MA', 'MB', 'Subline')
 
@@ -18,10 +18,6 @@ data$DM <- as.integer(data$Genotype == 'DM')
 #I want INSIDE to be the default type (vs BORDER)
 levels(data$Type) <- c('INSIDE', 'BORDER')
 
-# create log total seed count 
-data$logTSC <- log10(data$TSC)
-data <- subset(data, is.finite(data$logTSC)) #remove nans
-
 #Load in manual gene name data
 ##Label Duplicates
 genenamekey <- read.csv('data/gene_name_key.csv', header = T)
@@ -32,8 +28,6 @@ genenamekey$duplicate <- duplicated(genenamekey[, c('MA', 'MB')])
 #In Sets, change 2r to 2222 (it is a repeat of exp 2)
 level_2r <- which(levels(data$Set) == '2r')
 levels(data$Set)[level_2r] <- 2222
-
-#
 
 #Convert sets to integer to merge w genenamekey dataset
 data$Set_int <- as.integer(as.character(data$Set))
@@ -59,12 +53,9 @@ data <- data %>% select(-duplicate)
 data$Set <- droplevels(data$Set)
 duplicates_data <- duplicates_data %>% select(-duplicate)
 duplicates_data$Set <- droplevels(duplicates_data$Set)
-#str(data)
+#
 rm(dataj)
 #Save processed data :-) 
-
-#uncomment to overwrite
+str(data)
+## uncomment and run the line below to overwrite internally stored data for this r session!
 #saveRDS(data, file = "rdata/01_data.rds")
-
-##dev area
-

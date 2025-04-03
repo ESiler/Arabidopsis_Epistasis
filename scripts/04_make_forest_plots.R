@@ -46,7 +46,7 @@ plot_epi_forest <- function(epi_data, main="Title") {
           panel.grid.minor = element_blank(), 
           plot.title = element_text(hjust = 0.5),
           axis.line = element_line(colour = "black"),
-          axis.text.y.left = element_text(size = 7, colour = "black"),
+          axis.text.y.left = element_text(size = 5, colour = "black"),
           axis.text.y = element_text(size = 12, colour = "black"),
           axis.text.x.bottom = element_text(size = 10, colour = "black"),
           axis.title.x = element_text(size = 12, colour = "black"))
@@ -71,4 +71,9 @@ big_forest_plot <- ggarrange(fp.tsc,
 
 annotate_figure(big_forest_plot, 
                 top = text_grob("Epistasis", size=16))
+fp.tsc
+fp.dtb
+fp.ln
+fp.sn
+fp.spf
 big_forest_plot

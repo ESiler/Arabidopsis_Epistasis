@@ -28,7 +28,7 @@ make_heatmap <- function(r.df, trait = 'title') {
             panel.grid.minor = element_blank(), 
             plot.title = element_text(hjust = 0.5),
             axis.line = element_line(colour = "black"),
-            axis.text.y.left = element_text(size = 6, colour = "black"),
+            axis.text.y.left = element_text(size = 5, colour = "black"),
             axis.text.y = element_text(size = 12, colour = "black"),
             axis.text.x.bottom = element_text(size = 10, colour = "black"),
             axis.title.x = element_text(size = 12, colour = "black"))
